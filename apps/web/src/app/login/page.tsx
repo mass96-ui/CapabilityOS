@@ -1,16 +1,17 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../../lib/auth-context';
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type React from "react";
+import { useState } from "react";
+import { useAuth } from "../../lib/auth-context";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,9 +22,9 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Login failed. Please check your credentials.");
     } finally {
       setSubmitting(false);
     }
@@ -37,7 +38,7 @@ export default function LoginPage() {
             CapabilityOS
           </h1>
           <p className="text-slate-400 text-sm mt-2">
-            Learner Login — Access your industry workspace
+            Learner Login â€” Access your industry workspace
           </p>
         </div>
 
@@ -50,7 +51,10 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            <label
+              htmlFor="email"
+              className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2"
+            >
               Email Address
             </label>
             <input
@@ -64,7 +68,10 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            <label
+              htmlFor="password"
+              className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2"
+            >
               Password
             </label>
             <input
@@ -72,7 +79,7 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••••••"
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             />
           </div>
@@ -82,12 +89,12 @@ export default function LoginPage() {
             disabled={submitting}
             className="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/20 disabled:opacity-50 transition-all cursor-pointer"
           >
-            {submitting ? 'Authenticating...' : 'Sign In to Workspace'}
+            {submitting ? "Authenticating..." : "Sign In to Workspace"}
           </button>
         </form>
 
         <div className="mt-8 text-center text-sm text-slate-400">
-          Don&apos;t have a learner account yet?{' '}
+          Don&apos;t have a learner account yet?{" "}
           <Link
             href="/register"
             className="text-indigo-400 hover:text-indigo-300 font-semibold underline underline-offset-4"

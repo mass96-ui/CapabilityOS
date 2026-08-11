@@ -59,9 +59,9 @@ def create_application() -> FastAPI:
         version=settings.APP_VERSION,
         debug=settings.DEBUG,
         lifespan=lifespan,
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
+redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
+openapi_url="/openapi.json" if settings.ENVIRONMENT != "production" else None,
     )
 
     # ======================================================
@@ -72,8 +72,8 @@ def create_application() -> FastAPI:
         CORSMiddleware,
         allow_origins=get_cors_origins(),
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Request-ID"],
     )
 
     # ======================================================

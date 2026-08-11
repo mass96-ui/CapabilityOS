@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { fetchHealth } from '../lib/api';
-import { useAuth } from '../lib/auth-context';
+import Link from "next/link";
+import React, { useEffect, useState } from "react";
+import { fetchHealth } from "../lib/api";
+import { useAuth } from "../lib/auth-context";
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
-  const [healthStatus, setHealthStatus] = useState<string>('Checking...');
+  const [healthStatus, setHealthStatus] = useState<string>("Checking...");
   const [isApiOnline, setIsApiOnline] = useState<boolean>(false);
 
   useEffect(() => {
     fetchHealth()
       .then((res) => {
-        if (res.status === 'healthy') {
-          setHealthStatus('FastAPI Backend Online');
+        if (res.status === "healthy") {
+          setHealthStatus("FastAPI Backend Online");
           setIsApiOnline(true);
         } else {
           setHealthStatus(`Backend response: ${res.status}`);
         }
       })
       .catch(() => {
-        setHealthStatus('Backend Offline (Start Uvicorn on :8000)');
+        setHealthStatus("Backend Offline (Start Uvicorn on :8000)");
         setIsApiOnline(false);
       });
   }, []);
@@ -71,9 +71,9 @@ export default function HomePage() {
         <div className="inline-flex items-center space-x-2 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-300">
           <span
             className={`w-2 h-2 rounded-full ${
-              isApiOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-500'
+              isApiOnline ? "bg-emerald-400 animate-pulse" : "bg-amber-500"
             }`}
-          ></span>
+          />
           <span>{healthStatus}</span>
         </div>
 
@@ -85,7 +85,8 @@ export default function HomePage() {
         </h1>
 
         <p className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
-          Build real capability through hands-on work, assessments, and manager-guided project execution.
+          Build real capability through hands-on work, assessments, and manager-guided project
+          execution.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">

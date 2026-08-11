@@ -1,20 +1,21 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../../lib/auth-context';
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type React from "react";
+import { useState } from "react";
+import { useAuth } from "../../lib/auth-context";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -24,7 +25,7 @@ export default function RegisterPage() {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError("Passwords do not match.");
       return;
     }
 
@@ -39,9 +40,11 @@ export default function RegisterPage() {
         password,
         confirm_password: confirmPassword,
       });
-      router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed. Please check your details.');
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Registration failed. Please check your details.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -55,7 +58,7 @@ export default function RegisterPage() {
             CapabilityOS
           </h1>
           <p className="text-slate-400 text-sm mt-2">
-            Learner Registration — Create your practical capability account
+            Learner Registration â€” Create your practical capability account
           </p>
         </div>
 
@@ -69,7 +72,10 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label
+                htmlFor="first_name"
+                className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"
+              >
                 First Name
               </label>
               <input
@@ -82,7 +88,10 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label
+                htmlFor="last_name"
+                className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"
+              >
                 Last Name
               </label>
               <input
@@ -97,7 +106,10 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            <label
+              htmlFor="username"
+              className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"
+            >
               Username
             </label>
             <input
@@ -111,7 +123,10 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            <label
+              htmlFor="email"
+              className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"
+            >
               Email Address
             </label>
             <input
@@ -126,7 +141,10 @@ export default function RegisterPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label
+                htmlFor="password"
+                className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"
+              >
                 Password
               </label>
               <input
@@ -135,12 +153,15 @@ export default function RegisterPage() {
                 minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              <label
+                htmlFor="confirm_password"
+                className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5"
+              >
                 Confirm Password
               </label>
               <input
@@ -149,7 +170,7 @@ export default function RegisterPage() {
                 minLength={8}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               />
             </div>
@@ -160,12 +181,12 @@ export default function RegisterPage() {
             disabled={submitting}
             className="w-full mt-2 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/20 disabled:opacity-50 transition-all cursor-pointer"
           >
-            {submitting ? 'Creating Account...' : 'Register Account'}
+            {submitting ? "Creating Account..." : "Register Account"}
           </button>
         </form>
 
         <div className="mt-8 text-center text-sm text-slate-400">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <Link
             href="/login"
             className="text-indigo-400 hover:text-indigo-300 font-semibold underline underline-offset-4"

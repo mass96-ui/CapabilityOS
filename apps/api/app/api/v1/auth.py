@@ -5,7 +5,7 @@ import bcrypt
 import secrets
 import smtplib
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -31,6 +31,12 @@ from app.services.auth.refresh import RefreshTokenService
 from app.utils.jwt import JWTManager
 from app.utils.password import PasswordManager
 
+
+def _ensure_utc(value: datetime) -> datetime:
+    "Normalize database datetimes to timezone-aware UTC."
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 router = APIRouter(
     prefix="/auth",
@@ -231,7 +237,7 @@ async def _create_verification_otp(
             EmailVerificationOTP.used_at.is_(None),
         )
         .values(
-            used_at=datetime.utcnow(),
+            used_at=datetime.now(timezone.utc),
         )
     )
 
@@ -243,7 +249,7 @@ async def _create_verification_otp(
 
     otp_hash = _hash_otp(otp)
 
-    expires_at = datetime.utcnow() + timedelta(
+    expires_at = datetime.now(timezone.utc) + timedelta(
         minutes=OTP_EXPIRY_MINUTES
     )
 
@@ -658,9 +664,9 @@ async def verify_email(
     # Check expiration
     # --------------------------------------------------------
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
-    if otp_record.expires_at < now:
+    if _ensure_utc(otp_record.expires_at) < now:
 
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -718,7 +724,7 @@ async def verify_email(
     # OTP CORRECT
     # --------------------------------------------------------
 
-    otp_record.used_at = datetime.utcnow()
+    otp_record.used_at = datetime.now(timezone.utc)
 
     user.is_verified = True
 

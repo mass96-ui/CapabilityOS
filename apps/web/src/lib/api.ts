@@ -1,5 +1,4 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export interface UserProfile {
   id: string;
@@ -22,19 +21,16 @@ export interface AuthResponse {
   user: UserProfile;
 }
 
-export async function apiRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers.Authorization = `Bearer ${token}`;
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -46,9 +42,7 @@ export async function apiRequest<T>(
 
   if (!response.ok) {
     const message =
-      data.error?.message ||
-      data.detail ||
-      `Request failed with status ${response.status}`;
+      data.error?.message || data.detail || `Request failed with status ${response.status}`;
     throw new Error(message);
   }
 
@@ -56,5 +50,5 @@ export async function apiRequest<T>(
 }
 
 export async function fetchHealth() {
-  return apiRequest<{ success: boolean; status: string; service: string }>('/health');
+  return apiRequest<{ success: boolean; status: string; service: string }>("/health");
 }

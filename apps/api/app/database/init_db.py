@@ -5,6 +5,7 @@ import logging
 from sqlalchemy import text
 
 import app.models  # noqa: F401
+from app.core.config import settings
 from app.database.base import Base
 from app.database.session import engine
 
@@ -70,6 +71,9 @@ async def initialize_database() -> None:
     if not connected:
         raise RuntimeError("Unable to connect to the database.")
 
-    await create_database()
+    if settings.ENVIRONMENT == "production":
+        logger.info("Production environment detected; skipping automatic schema creation.")
+    else:
+        await create_database()
 
     logger.info("Database initialization completed successfully.")
