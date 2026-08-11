@@ -1,33 +1,42 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
 import app.api.v1.auth as auth_module
 
 
-def test_auth_flow(
+def _message(response) -> str:
+    data = response.json()
+    return (
+        data.get("error", {}).get("message")
+        or data.get("detail", "")
+    )
+
+
+def test_auth_production_flow(
     client: TestClient,
     monkeypatch,
 ) -> None:
     """
-    Complete authentication flow.
+    Production authentication lifecycle.
 
-    Security flow:
-
-    1. Register unverified user.
-    2. No tokens are issued during registration.
-    3. Login is rejected until email verification.
-    4. Verify OTP.
-    5. Authentication tokens are issued.
-    6. Access protected /me endpoint.
-    7. Test invalid authentication cases.
+    Covers:
+    - registration
+    - duplicate email/username protection
+    - OTP verification
+    - unverified login rejection
+    - verified login
+    - invalid password
+    - authenticated /me
+    - invalid access token
+    - refresh-token rotation
+    - old refresh-token rejection
+    - single-session logout
+    - logout-all
+    - unauthorized logout-all
     """
 
-    # ========================================================
-    # Capture verification OTP instead of sending real email
-    # ========================================================
-
-    captured = {}
+    captured: dict[str, str] = {}
 
     async def fake_send_verification_email(
         email: str,
@@ -57,29 +66,21 @@ def test_auth_flow(
         "confirm_password": "Password123!",
     }
 
-    reg_response = client.post(
+    response = client.post(
         "/api/v1/auth/register",
         json=register_payload,
     )
 
-    assert reg_response.status_code == 201, reg_response.text
+    assert response.status_code == 201, response.text
 
-    reg_data = reg_response.json()
+    data = response.json()
 
-    # Registration MUST NOT return authentication tokens.
-    assert "access_token" not in reg_data
-    assert "refresh_token" not in reg_data
+    assert "access_token" not in data
+    assert "refresh_token" not in data
+    assert data["is_verified"] is False
 
-    assert reg_data["email"] == "learner@capabilityos.dev"
-    assert reg_data["username"] == "testlearner"
-
-    # User must start unverified.
-    assert reg_data["is_verified"] is False
-
-    # OTP should have been generated and captured.
-    assert captured["email"] == "learner@capabilityos.dev"
+    assert captured["email"] == register_payload["email"]
     assert captured["first_name"] == "Test"
-    assert captured["otp"]
     assert len(captured["otp"]) == 6
     assert captured["otp"].isdigit()
 
@@ -89,252 +90,307 @@ def test_auth_flow(
     # 2. DUPLICATE EMAIL
     # ========================================================
 
-    dup_email_payload = {
-        "first_name": "Duplicate",
-        "last_name": "User",
-        "username": "uniqueusername",
-        "email": "learner@capabilityos.dev",
-        "password": "Password123!",
-        "confirm_password": "Password123!",
+    duplicate_email = {
+        **register_payload,
+        "username": "differentusername",
     }
 
-    dup_res = client.post(
+    response = client.post(
         "/api/v1/auth/register",
-        json=dup_email_payload,
+        json=duplicate_email,
     )
 
-    assert dup_res.status_code == 400
-
-    dup_msg = (
-        dup_res.json()
-        .get("error", {})
-        .get("message")
-        or dup_res.json().get("detail", "")
-    )
-
-    assert "already registered" in dup_msg.lower()
+    assert response.status_code == 400
+    assert "already registered" in _message(response).lower()
 
     # ========================================================
     # 3. DUPLICATE USERNAME
     # ========================================================
 
-    dup_uname_payload = {
-        "first_name": "Duplicate",
-        "last_name": "User",
-        "username": "testlearner",
+    duplicate_username = {
+        **register_payload,
         "email": "otheremail@capabilityos.dev",
-        "password": "Password123!",
-        "confirm_password": "Password123!",
     }
 
-    dup_u_res = client.post(
+    response = client.post(
         "/api/v1/auth/register",
-        json=dup_uname_payload,
+        json=duplicate_username,
     )
 
-    assert dup_u_res.status_code == 400
-
-    dup_u_msg = (
-        dup_u_res.json()
-        .get("error", {})
-        .get("message")
-        or dup_u_res.json().get("detail", "")
-    )
-
-    assert "already taken" in dup_u_msg.lower()
+    assert response.status_code == 400
+    assert "already taken" in _message(response).lower()
 
     # ========================================================
-    # 4. LOGIN BEFORE EMAIL VERIFICATION
+    # 4. LOGIN BEFORE VERIFICATION
     # ========================================================
 
     login_payload = {
-        "email": "learner@capabilityos.dev",
-        "password": "Password123!",
+        "email": register_payload["email"],
+        "password": register_payload["password"],
     }
 
-    unverified_login_res = client.post(
+    response = client.post(
         "/api/v1/auth/login",
         json=login_payload,
     )
 
-    # Security requirement:
-    # unverified users MUST NOT receive tokens.
-    assert unverified_login_res.status_code == 403
+    assert response.status_code == 403
+    assert "not verified" in _message(response).lower()
 
-    unverified_msg = (
-        unverified_login_res.json()
-        .get("error", {})
-        .get("message")
-        or unverified_login_res.json().get("detail", "")
+    # ========================================================
+    # 5. WRONG OTP
+    # ========================================================
+
+    wrong_otp = (
+        "000000"
+        if verification_otp != "000000"
+        else "111111"
     )
 
-    assert "not verified" in unverified_msg.lower()
-
-    # ========================================================
-    # 5. VERIFY EMAIL OTP
-    # ========================================================
-
-    verify_payload = {
-        "email": "learner@capabilityos.dev",
-        "otp": verification_otp,
-    }
-
-    verify_res = client.post(
+    response = client.post(
         "/api/v1/auth/verify-email",
-        json=verify_payload,
+        json={
+            "email": register_payload["email"],
+            "otp": wrong_otp,
+        },
     )
 
-    assert verify_res.status_code == 200, verify_res.text
+    assert response.status_code == 400
 
-    verify_data = verify_res.json()
+    # ========================================================
+    # 6. CORRECT OTP
+    # ========================================================
 
-    assert "access_token" in verify_data
-    assert "refresh_token" in verify_data
-    assert verify_data["token_type"] == "bearer"
-
-    assert (
-        verify_data["user"]["email"]
-        == "learner@capabilityos.dev"
+    response = client.post(
+        "/api/v1/auth/verify-email",
+        json={
+            "email": register_payload["email"],
+            "otp": verification_otp,
+        },
     )
 
-    assert verify_data["user"]["is_verified"] is True
+    assert response.status_code == 200, response.text
 
-    access_token = verify_data["access_token"]
-    refresh_token = verify_data["refresh_token"]
+    data = response.json()
 
-    assert access_token
-    assert refresh_token
+    assert data["user"]["is_verified"] is True
+    assert data["access_token"]
+    assert data["refresh_token"]
+    assert data["token_type"] == "bearer"
+
+    access_token = data["access_token"]
+    refresh_token = data["refresh_token"]
 
     # ========================================================
-    # 6. LOGIN AFTER VERIFICATION
+    # 7. OTP REUSE MUST FAIL
     # ========================================================
 
-    login_res = client.post(
+    response = client.post(
+        "/api/v1/auth/verify-email",
+        json={
+            "email": register_payload["email"],
+            "otp": verification_otp,
+        },
+    )
+
+    assert response.status_code == 400
+    assert "already verified" in _message(response).lower()
+
+    # ========================================================
+    # 8. VERIFIED LOGIN
+    # ========================================================
+
+    response = client.post(
         "/api/v1/auth/login",
         json=login_payload,
     )
 
-    assert login_res.status_code == 200, login_res.text
+    assert response.status_code == 200, response.text
 
-    login_data = login_res.json()
+    login_data = response.json()
 
-    assert "access_token" in login_data
-    assert "refresh_token" in login_data
-
-    assert (
-        login_data["user"]["email"]
-        == "learner@capabilityos.dev"
-    )
+    assert login_data["access_token"]
+    assert login_data["refresh_token"]
 
     # ========================================================
-    # 7. LOGIN WITH INVALID PASSWORD
+    # 9. INVALID PASSWORD
     # ========================================================
 
-    bad_login_payload = {
-        "email": "learner@capabilityos.dev",
-        "password": "WrongPassword123!",
-    }
-
-    bad_login_res = client.post(
+    response = client.post(
         "/api/v1/auth/login",
-        json=bad_login_payload,
+        json={
+            "email": register_payload["email"],
+            "password": "WrongPassword123!",
+        },
     )
 
-    assert bad_login_res.status_code == 401
-
-    bad_login_msg = (
-        bad_login_res.json()
-        .get("error", {})
-        .get("message")
-        or bad_login_res.json().get("detail", "")
-    )
-
+    assert response.status_code == 401
     assert "invalid email/username or password" in (
-        bad_login_msg.lower()
+        _message(response).lower()
     )
 
     # ========================================================
-    # 8. GET /auth/me WITH VALID ACCESS TOKEN
+    # 10. AUTHENTICATED /ME
     # ========================================================
 
     headers = {
         "Authorization": f"Bearer {access_token}"
     }
 
-    me_res = client.get(
+    response = client.get(
         "/api/v1/auth/me",
         headers=headers,
     )
 
-    assert me_res.status_code == 200, me_res.text
+    assert response.status_code == 200
 
-    me_data = me_res.json()
+    me = response.json()
 
-    assert me_data["email"] == "learner@capabilityos.dev"
-    assert me_data["username"] == "testlearner"
-    assert me_data["first_name"] == "Test"
-    assert me_data["last_name"] == "Learner"
-    assert me_data["is_verified"] is True
+    assert me["email"] == register_payload["email"]
+    assert me["username"] == register_payload["username"]
+    assert me["is_verified"] is True
 
     # ========================================================
-    # 9. GET /auth/me WITHOUT TOKEN
+    # 11. /ME WITHOUT TOKEN
     # ========================================================
 
-    no_token_res = client.get(
-        "/api/v1/auth/me"
-    )
+    response = client.get("/api/v1/auth/me")
 
-    assert no_token_res.status_code == 401
+    assert response.status_code == 401
 
     # ========================================================
-    # 10. GET /auth/me WITH INVALID TOKEN
+    # 12. /ME INVALID TOKEN
     # ========================================================
 
-    bad_token_res = client.get(
+    response = client.get(
         "/api/v1/auth/me",
         headers={
             "Authorization": "Bearer invalid_token_123"
         },
     )
 
-    assert bad_token_res.status_code == 401
+    assert response.status_code == 401
 
     # ========================================================
-    # 11. REFRESH TOKEN
+    # 13. REFRESH TOKEN ROTATION
     # ========================================================
 
-    refresh_res = client.post(
+    response = client.post(
         "/api/v1/auth/refresh",
         json={
             "refresh_token": refresh_token
         },
     )
 
-    assert refresh_res.status_code == 200, refresh_res.text
+    assert response.status_code == 200, response.text
 
-    refresh_data = refresh_res.json()
+    refresh_data = response.json()
 
-    assert "access_token" in refresh_data
-    assert "refresh_token" in refresh_data
+    rotated_access_token = refresh_data["access_token"]
+    rotated_refresh_token = refresh_data["refresh_token"]
 
-    assert refresh_data["access_token"]
-    assert refresh_data["refresh_token"]
-
-    # Refresh-token rotation should produce a new token.
-    assert (
-        refresh_data["refresh_token"]
-        != refresh_token
-    )
+    assert rotated_access_token
+    assert rotated_refresh_token
+    assert rotated_refresh_token != refresh_token
 
     # ========================================================
-    # 12. OLD REFRESH TOKEN MUST NO LONGER WORK
+    # 14. OLD REFRESH TOKEN MUST FAIL
     # ========================================================
 
-    old_refresh_res = client.post(
+    response = client.post(
         "/api/v1/auth/refresh",
         json={
             "refresh_token": refresh_token
         },
     )
 
-    assert old_refresh_res.status_code == 401
+    assert response.status_code == 401
+
+    # ========================================================
+    # 15. SINGLE SESSION LOGOUT
+    # ========================================================
+
+    response = client.post(
+        "/api/v1/auth/logout",
+        json={
+            "refresh_token": rotated_refresh_token
+        },
+    )
+
+    assert response.status_code == 204
+
+    # Revoked session must not refresh.
+    response = client.post(
+        "/api/v1/auth/refresh",
+        json={
+            "refresh_token": rotated_refresh_token
+        },
+    )
+
+    assert response.status_code == 401
+
+    # ========================================================
+    # 16. CREATE SECOND SESSION
+    # ========================================================
+
+    response = client.post(
+        "/api/v1/auth/login",
+        json=login_payload,
+    )
+
+    assert response.status_code == 200
+
+    second_login = response.json()
+
+    second_access_token = second_login["access_token"]
+    second_refresh_token = second_login["refresh_token"]
+
+    assert second_access_token
+    assert second_refresh_token
+
+    # ========================================================
+    # 17. LOGOUT-ALL
+    # ========================================================
+
+    response = client.post(
+        "/api/v1/auth/logout-all",
+        headers={
+            "Authorization": f"Bearer {second_access_token}"
+        },
+    )
+
+    assert response.status_code == 204
+
+    # ========================================================
+    # 18. ALL REFRESH SESSIONS MUST BE REVOKED
+    # ========================================================
+
+    response = client.post(
+        "/api/v1/auth/refresh",
+        json={
+            "refresh_token": second_refresh_token
+        },
+    )
+
+    assert response.status_code == 401
+
+    # ========================================================
+    # 19. ACCESS TOKEN REMAINS VALID UNTIL EXPIRATION
+    # ========================================================
+
+    response = client.get(
+        "/api/v1/auth/me",
+        headers={
+            "Authorization": f"Bearer {second_access_token}"
+        },
+    )
+
+    assert response.status_code == 200
+
+    # ========================================================
+    # 20. LOGOUT-ALL REQUIRES AUTHENTICATION
+    # ========================================================
+
+    response = client.post("/api/v1/auth/logout-all")
+
+    assert response.status_code == 401
