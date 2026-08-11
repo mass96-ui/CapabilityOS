@@ -1,0 +1,6 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: capabilityos
+      POSTGRES_USER: capabilityos
+      POSTGRES_PASSWORD: capabilityos

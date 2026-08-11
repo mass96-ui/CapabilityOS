@@ -1,0 +1,28 @@
+{
+  "name": "capabilityos-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "corepack pnpm turbo run dev --parallel",
+    "build": "corepack pnpm turbo run build",
+    "lint": "corepack pnpm turbo run lint",
+    "format": "corepack pnpm exec biome format --write .",
+    "typecheck": "corepack pnpm turbo run typecheck",
+    "test": "corepack pnpm turbo run test",
+    "clean": "rimraf node_modules .pnpm-store apps/*/node_modules packages/*/node_modules apps/*/.next apps/*/dist packages/*/dist coverage",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "22.10.1",
+    "husky": "9.1.0",
+    "lint-staged": "15.0.0",
+    "rimraf": "6.0.1",
+    "turbo": "2.4.0",
+    "typescript": "5.6.3",
+    "vitest": "2.1.4"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
