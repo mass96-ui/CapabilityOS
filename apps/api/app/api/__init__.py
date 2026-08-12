@@ -39,6 +39,9 @@ from app.api.v1.capability_score_history import (
 from app.api.v1.projects import (
     router as projects_router,
 )
+from app.api.v1.project_matching import (
+    router as project_matching_router,
+)
 
 
 api_router = APIRouter()
@@ -140,6 +143,12 @@ api_router.include_router(
     projects_router,
     prefix="/v1/projects",
     tags=["Projects"],
+)
+
+api_router.include_router(
+    project_matching_router,
+    prefix="/v1",
+    tags=["Project Matching"],
 )
 
 
