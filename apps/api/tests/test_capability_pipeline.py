@@ -122,5 +122,5 @@ async def test_capability_pipeline():
         assert user_capability is not None
         assert len(history) >= 1
 
-        assert capability_result.score == 80.0
+        assert capability_result.score == pytest.approx(80.0)
         assert capability_result.evidence_count == 5
