@@ -128,3 +128,28 @@ class AuthSessionRepository:
         auth_session.last_used_at = datetime.now(UTC)
 
         await self.session.flush()
+
+    async def claim_for_rotation(
+        self,
+        auth_session: AuthSession,
+    ) -> bool:
+        """
+        Atomically revoke a refresh session for rotation.
+
+        Returns True only for the request that successfully claims
+        the active session. Concurrent requests receive False.
+        """
+        result = await self.session.execute(
+            update(AuthSession)
+            .where(
+                AuthSession.id == auth_session.id,
+                AuthSession.revoked_at.is_(None),
+            )
+            .values(
+                revoked_at=datetime.now(UTC),
+            )
+        )
+
+        await self.session.flush()
+
+        return result.rowcount == 1
