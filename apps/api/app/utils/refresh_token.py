@@ -18,3 +18,17 @@ def hash_refresh_token(token: str) -> str:
         token.encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
+
+
+def hash_password_reset_token(token: str) -> str:
+    """
+    Deterministically hash a password reset token.
+
+    The raw token is never stored in the database.
+    """
+
+    return hmac.new(
+        settings.JWT_SECRET_KEY.encode("utf-8"),
+        token.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()

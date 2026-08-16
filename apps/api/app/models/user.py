@@ -101,6 +101,12 @@ class User(Base):
         nullable=False,
     )
 
+    role: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="learner",
+    )
+
     # ==========================================================
     # Audit
     # ==========================================================

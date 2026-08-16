@@ -3,7 +3,7 @@ from dataclasses import asdict
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 
-from app.core.dependencies import CurrentUserDep
+from app.core.dependencies import CurrentUserDep, LearnerDep
 from app.database.session import AsyncSessionFactory
 from app.models.project import Project
 from app.models.project_requirement import ProjectRequirement
@@ -19,7 +19,7 @@ router = APIRouter(
 @router.get("/{project_id}/match")
 async def match_project(
     project_id: str,
-    current_user: CurrentUserDep,
+    current_user: LearnerDep,
 ):
     async with AsyncSessionFactory() as session:
         project_result = await session.execute(

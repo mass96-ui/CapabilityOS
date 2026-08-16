@@ -113,6 +113,63 @@ async def get_current_user(
 
 
 # ============================================================
+# Role-Based Authorization
+# ============================================================
+
+def _RoleRequired(allowed_roles: set[str]):
+    """
+    Reusable authorization dependency factory.
+
+    Supports the unified User model role system:
+
+    - learner (default)
+    - manager
+    - admin
+
+    ``is_superuser`` is preserved for backward compatibility
+    and grants full platform administration access.
+    """
+
+    def dependency(
+        current_user: User = Depends(get_current_user),
+    ) -> User:
+        is_admin = current_user.is_superuser or current_user.role == "admin"
+        is_manager = is_admin or current_user.role == "manager"
+
+        if "admin" in allowed_roles and is_admin:
+            return current_user
+
+        if "manager" in allowed_roles and is_manager:
+            return current_user
+
+        if "learner" in allowed_roles:
+            return current_user
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions.",
+        )
+
+    return dependency
+
+
+AdminDep = Annotated[
+    User,
+    Depends(_RoleRequired({"admin"})),
+]
+
+ManagerDep = Annotated[
+    User,
+    Depends(_RoleRequired({"admin", "manager"})),
+]
+
+LearnerDep = Annotated[
+    User,
+    Depends(_RoleRequired({"admin", "manager", "learner"})),
+]
+
+
+# ============================================================
 # Typed Dependency Aliases
 # ============================================================
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, status
 
-from app.core.dependencies import CurrentUserDep, DatabaseDep
+from app.core.dependencies import LearnerDep, DatabaseDep
 from app.schemas.learner.profile import (
     LearnerProfileCreate,
     LearnerProfileResponse,
@@ -27,7 +27,7 @@ router = APIRouter(
     summary="Get current learner profile",
 )
 async def get_my_profile(
-    current_user: CurrentUserDep,
+    current_user: LearnerDep,
     db: DatabaseDep,
 ) -> LearnerProfileResponse:
 
@@ -58,7 +58,7 @@ async def get_my_profile(
 )
 async def create_my_profile(
     request: LearnerProfileCreate,
-    current_user: CurrentUserDep,
+    current_user: LearnerDep,
     db: DatabaseDep,
 ) -> LearnerProfileResponse:
 
@@ -104,7 +104,7 @@ async def create_my_profile(
 )
 async def update_my_profile(
     request: LearnerProfileUpdate,
-    current_user: CurrentUserDep,
+    current_user: LearnerDep,
     db: DatabaseDep,
 ) -> LearnerProfileResponse:
 

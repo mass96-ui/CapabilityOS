@@ -4,6 +4,7 @@ from pydantic import EmailStr, Field, SecretStr, field_validator
 
 from app.schemas.common import BaseSchema
 from app.schemas.user import UserResponse
+from app.utils.validators import validate_password
 
 
 # ==========================================================
@@ -89,6 +90,16 @@ class RegisterRequest(BaseSchema):
 
         return value
 
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(
+        cls,
+        value: SecretStr,
+    ) -> SecretStr:
+        validate_password(value.get_secret_value())
+
+        return value
+
 
 # ==========================================================
 # EMAIL VERIFICATION
@@ -149,6 +160,16 @@ class ChangePasswordRequest(BaseSchema):
 
         return value
 
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password_strength(
+        cls,
+        value: SecretStr,
+    ) -> SecretStr:
+        validate_password(value.get_secret_value())
+
+        return value
+
 
 # ==========================================================
 # FORGOT PASSWORD
@@ -192,6 +213,16 @@ class ResetPasswordRequest(BaseSchema):
             != password.get_secret_value()
         ):
             raise ValueError("Passwords do not match.")
+
+        return value
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(
+        cls,
+        value: SecretStr,
+    ) -> SecretStr:
+        validate_password(value.get_secret_value())
 
         return value
 

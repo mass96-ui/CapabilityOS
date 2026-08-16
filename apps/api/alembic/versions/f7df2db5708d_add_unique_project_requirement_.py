@@ -19,16 +19,30 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    with op.batch_alter_table("project_requirements") as batch_op:
-        batch_op.create_unique_constraint(
-            "uq_project_requirement",
-            ["project_id", "capability_id"],
-        )
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    constraints = [
+        c["name"] for c in inspector.get_unique_constraints("project_requirements")
+    ]
+
+    if "uq_project_requirement" not in constraints:
+        with op.batch_alter_table("project_requirements") as batch_op:
+            batch_op.create_unique_constraint(
+                "uq_project_requirement",
+                ["project_id", "capability_id"],
+            )
 
 
 def downgrade() -> None:
-    with op.batch_alter_table("project_requirements") as batch_op:
-        batch_op.drop_constraint(
-            "uq_project_requirement",
-            type_="unique",
-        )
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    constraints = [
+        c["name"] for c in inspector.get_unique_constraints("project_requirements")
+    ]
+
+    if "uq_project_requirement" in constraints:
+        with op.batch_alter_table("project_requirements") as batch_op:
+            batch_op.drop_constraint(
+                "uq_project_requirement",
+                type_="unique",
+            )

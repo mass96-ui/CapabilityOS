@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.user import User
 from app.repositories.project import ProjectRepository
 from app.repositories.user import UserRepository
 
@@ -11,9 +12,36 @@ class ProjectService:
     def __init__(
         self,
         session: AsyncSession,
+        current_user: User | None = None,
     ):
         self.repository = ProjectRepository(session)
         self.user_repository = UserRepository(session)
+        self.current_user = current_user
+
+    def _require_owner_or_admin(self, project) -> None:
+        """
+        Ensure the current user is the project owner or an admin.
+        """
+
+        if self.current_user is None:
+            raise ValueError(
+                "Authentication required."
+            )
+
+        is_admin = (
+            self.current_user.is_superuser
+            or self.current_user.role == "admin"
+        )
+
+        if is_admin:
+            return
+
+        if project.owner_id == self.current_user.id:
+            return
+
+        raise ValueError(
+            "You do not have permission to modify this project."
+        )
 
     # ======================================================
     # CREATE PROJECT
@@ -28,6 +56,17 @@ class ProjectService:
         owner_id: str,
         organization_id: str | None,
     ):
+
+        if self.current_user is not None:
+            is_admin = (
+                self.current_user.is_superuser
+                or self.current_user.role == "admin"
+            )
+
+            if not is_admin and owner_id != self.current_user.id:
+                raise ValueError(
+                    "You can only create projects for yourself."
+                )
 
         owner = await self.user_repository.get_by_id(
             owner_id
@@ -116,6 +155,8 @@ class ProjectService:
             project_id
         )
 
+        self._require_owner_or_admin(project)
+
         allowed_statuses = {
             "draft",
             "open",
@@ -152,6 +193,8 @@ class ProjectService:
         project = await self.get_project(
             project_id
         )
+
+        self._require_owner_or_admin(project)
 
         await self.repository.delete(
             project

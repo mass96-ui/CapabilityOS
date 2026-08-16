@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.dependencies import CurrentUserDep
 from app.database.session import get_session
 from app.schemas.project import (
     ProjectCreate,
@@ -27,9 +28,13 @@ router = APIRouter()
 async def create_project(
     payload: ProjectCreate,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(CurrentUserDep),
 ):
 
-    service = ProjectService(session)
+    service = ProjectService(
+        session,
+        current_user=current_user,
+    )
 
     try:
 
@@ -51,6 +56,12 @@ async def create_project(
                 detail=message,
             )
 
+        if "permission" in message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=message,
+            )
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=message,
@@ -67,6 +78,7 @@ async def create_project(
 )
 async def get_projects(
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(CurrentUserDep),
 ):
 
     service = ProjectService(session)
@@ -85,6 +97,7 @@ async def get_projects(
 async def get_owner_projects(
     owner_id: str,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(CurrentUserDep),
 ):
 
     service = ProjectService(session)
@@ -114,6 +127,7 @@ async def get_owner_projects(
 async def get_project(
     project_id: str,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(CurrentUserDep),
 ):
 
     service = ProjectService(session)
@@ -144,9 +158,13 @@ async def update_project(
     project_id: str,
     payload: ProjectUpdate,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(CurrentUserDep),
 ):
 
-    service = ProjectService(session)
+    service = ProjectService(
+        session,
+        current_user=current_user,
+    )
 
     try:
 
@@ -168,6 +186,12 @@ async def update_project(
                 detail=message,
             )
 
+        if "permission" in message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=message,
+            )
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=message,
@@ -184,9 +208,13 @@ async def update_project(
 async def delete_project(
     project_id: str,
     session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(CurrentUserDep),
 ):
 
-    service = ProjectService(session)
+    service = ProjectService(
+        session,
+        current_user=current_user,
+    )
 
     try:
 
@@ -196,7 +224,21 @@ async def delete_project(
 
     except ValueError as exc:
 
+        message = str(exc)
+
+        if "does not exist" in message:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=message,
+            )
+
+        if "permission" in message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=message,
+            )
+
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(exc),
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=message,
         )

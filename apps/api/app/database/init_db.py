@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import logging
+import subprocess
+import sys
+from pathlib import Path
 
 from sqlalchemy import text
 
@@ -11,31 +14,44 @@ from app.database.session import engine
 
 logger = logging.getLogger("capabilityos.database")
 
+_ALEMBIC_DIR = Path(__file__).parent.parent.parent
+
+
+def _run_alembic(command: str) -> None:
+    """
+    Run an Alembic CLI command in the alembic directory.
+    """
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic"] + command.split(),
+        cwd=_ALEMBIC_DIR,
+        capture_output=True,
+        text=True,
+    )
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Alembic {' '.join(command)} failed: {result.stderr}"
+        )
+
 
 async def create_database() -> None:
     """
-    Create all database tables.
+    Create all database tables using Alembic migrations.
 
     This function is executed during application startup.
     """
-
-    async with engine.begin() as connection:
-        await connection.run_sync(Base.metadata.create_all)
-
+    _run_alembic("upgrade head")
     logger.info("Database tables created successfully.")
 
 
 async def drop_database() -> None:
     """
-    Drop all database tables.
+    Drop all database tables using Alembic migrations.
 
     WARNING:
     Only use this in development or automated tests.
     """
-
-    async with engine.begin() as connection:
-        await connection.run_sync(Base.metadata.drop_all)
-
+    _run_alembic("downgrade base")
     logger.warning("Database tables dropped.")
 
 

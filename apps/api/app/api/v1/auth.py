@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 import bcrypt
 import secrets
-import smtplib
 
 from datetime import datetime, timedelta, timezone
-from email.message import EmailMessage
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -16,18 +13,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.dependencies import CurrentUserDep, get_db
 from app.core.logging import logger
+from app.core.rate_limit import rate_limit
 from app.models.auth.email_verification import EmailVerificationOTP
 from app.repositories.user import UserRepository
 from app.schemas.auth import (
     AuthResponse,
+    ForgotPasswordRequest,
     LoginRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     VerifyEmailRequest,
     ResendVerificationRequest,
     RefreshTokenRequest,
 )
 from app.schemas.user import UserResponse
 from app.services.auth.refresh import RefreshTokenService
+from app.services.password_reset import PasswordResetService
 from app.utils.jwt import JWTManager
 from app.utils.password import PasswordManager
 
@@ -99,70 +100,7 @@ def _verify_otp(
 # EMAIL SENDING
 # ============================================================
 
-
-def _send_verification_email_sync(
-    email: str,
-    first_name: str,
-    otp: str,
-) -> None:
-    """
-    Send verification email using configured SMTP server.
-    """
-
-    message = EmailMessage()
-
-    message["Subject"] = "Verify your CapabilityOS account"
-
-    message["From"] = (
-        settings.SMTP_USERNAME
-        if settings.SMTP_USERNAME
-        else "no-reply@capabilityos.dev"
-    )
-
-    message["To"] = email
-
-    message.set_content(
-        f"""
-Hello {first_name},
-
-Welcome to CapabilityOS.
-
-Your email verification OTP is:
-
-{otp}
-
-This OTP is valid for {OTP_EXPIRY_MINUTES} minutes.
-
-For security:
-
-- Do not share this OTP with anyone.
-- CapabilityOS will never ask you to share your OTP.
-- If you did not create this account, you can ignore this email.
-
-Regards,
-CapabilityOS Team
-""".strip()
-    )
-
-    with smtplib.SMTP(
-        settings.SMTP_HOST,
-        settings.SMTP_PORT,
-        timeout=10,
-    ) as server:
-
-        if settings.SMTP_TLS:
-            server.starttls()
-
-        if (
-            settings.SMTP_USERNAME
-            and settings.SMTP_PASSWORD
-        ):
-            server.login(
-                settings.SMTP_USERNAME,
-                settings.SMTP_PASSWORD,
-            )
-
-        server.send_message(message)
+from app.services.email import EmailService
 
 
 async def _send_verification_email(
@@ -174,11 +112,10 @@ async def _send_verification_email(
     Send email without blocking the FastAPI event loop.
     """
 
-    await asyncio.to_thread(
-        _send_verification_email_sync,
-        email,
-        first_name,
-        otp,
+    await EmailService.send_verification_otp(
+        email=email,
+        otp=otp,
+        first_name=first_name,
     )
 
 
@@ -465,6 +402,7 @@ async def _authenticate_user(
 async def register(
     request: RegisterRequest,
     db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit(limit=5, window_seconds=60)),
 ) -> UserResponse:
     """
     Register a new CapabilityOS user.
@@ -564,6 +502,7 @@ async def register(
 async def verify_email(
     request: VerifyEmailRequest,
     db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit(limit=5, window_seconds=60)),
 ) -> AuthResponse:
     """
     Verify a user's email address using OTP.
@@ -734,6 +673,7 @@ async def verify_email(
 async def resend_verification(
     request: ResendVerificationRequest,
     db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit(limit=3, window_seconds=60)),
 ) -> UserResponse:
     """
     Generate and send a new email verification OTP.
@@ -796,6 +736,7 @@ async def resend_verification(
 async def login(
     request: LoginRequest,
     db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit(limit=10, window_seconds=60)),
 ) -> AuthResponse:
     """
     Authenticate user using JSON.
@@ -828,6 +769,7 @@ async def login(
 async def token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit(limit=10, window_seconds=60)),
 ) -> AuthResponse:
     """
     OAuth2-compatible login endpoint.
@@ -870,6 +812,7 @@ async def token(
 async def refresh(
     request: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit(limit=20, window_seconds=60)),
 ) -> AuthResponse:
     """
     Rotate a valid refresh token.
@@ -996,6 +939,7 @@ async def refresh(
 async def logout(
     request: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit(limit=10, window_seconds=60)),
 ) -> None:
     """
     Revoke exactly one refresh-token session.
@@ -1021,6 +965,7 @@ async def logout(
 async def logout_all(
     current_user: CurrentUserDep,
     db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit(limit=5, window_seconds=60)),
 ) -> None:
     """
     Revoke every refresh-token session belonging to
@@ -1031,6 +976,67 @@ async def logout_all(
         user_id=current_user.id,
         db=db,
     )
+
+
+# ============================================================
+# FORGOT PASSWORD
+# ============================================================
+
+@router.post(
+    "/forgot-password",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Request a password reset email",
+)
+async def forgot_password(
+    request: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit(limit=5, window_seconds=60)),
+) -> None:
+    """
+    Initiate a password reset.
+
+    Always returns 202 to avoid user enumeration.
+    """
+
+    service = PasswordResetService(db)
+
+    await service.request_reset(
+        email=str(request.email),
+    )
+
+
+# ============================================================
+# RESET PASSWORD
+# ============================================================
+
+@router.post(
+    "/reset-password",
+    status_code=status.HTTP_200_OK,
+    summary="Reset password using a reset token",
+)
+async def reset_password(
+    request: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(rate_limit(limit=5, window_seconds=60)),
+) -> None:
+    """
+    Complete a password reset.
+
+    The raw token is consumed and marked as used.
+    """
+
+    service = PasswordResetService(db)
+
+    try:
+        await service.reset_password(
+            token=request.token,
+            new_password=request.password.get_secret_value(),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
 
 
 @router.get(

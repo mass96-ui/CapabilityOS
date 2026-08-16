@@ -14,6 +14,7 @@ class EmailService:
     async def send_verification_otp(
         email: str,
         otp: str,
+        first_name: str | None = None,
     ) -> None:
         """Send the email verification OTP."""
 
@@ -26,11 +27,17 @@ class EmailService:
         )
         message["To"] = email
 
+        greeting = (
+            f"Hello {first_name}," if first_name else "Hello,"
+        )
+
         message.set_content(
             f"""
-Hello,
+{greeting}
 
-Your CapabilityOS email verification OTP is:
+Welcome to CapabilityOS.
+
+Your email verification OTP is:
 
 {otp}
 
@@ -68,3 +75,23 @@ CapabilityOS Team
                 )
 
             server.send_message(message)
+
+    @staticmethod
+    async def _send_raw(
+        email: str,
+        subject: str,
+        body: str,
+    ) -> None:
+        """Send a plain-text email."""
+
+        message = EmailMessage()
+
+        message["Subject"] = subject
+        message["From"] = (
+            settings.SMTP_USERNAME
+            or "no-reply@capabilityos.dev"
+        )
+        message["To"] = email
+        message.set_content(body)
+
+        await asyncio.to_thread(EmailService._send, message)

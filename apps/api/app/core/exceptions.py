@@ -77,6 +77,9 @@ def _json_safe(value: Any) -> Any:
     if isinstance(value, (list, tuple)):
         return [_json_safe(item) for item in value]
 
+    if isinstance(value, Exception):
+        return str(value)
+
     return value
 
 

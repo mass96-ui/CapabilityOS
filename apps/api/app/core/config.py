@@ -58,6 +58,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_REQUESTS: int = Field(default=100)
     RATE_LIMIT_WINDOW_SECONDS: int = Field(default=60)
 
+    FRONTEND_URL: str = Field(default="http://localhost:3000")
+
     @model_validator(mode="after")
     def validate_security(self) -> "Settings":
         if self.ENVIRONMENT.lower() != "production":

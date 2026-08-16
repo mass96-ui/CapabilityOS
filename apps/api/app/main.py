@@ -18,6 +18,7 @@ from app.core.exceptions import (
     handle_validation_error,
 )
 from app.core.logging import logger
+from app.core.middleware import RequestIDMiddleware
 from app.core.security import (
     get_cors_origins,
     get_trusted_hosts,
@@ -76,6 +77,8 @@ openapi_url="/openapi.json" if settings.ENVIRONMENT != "production" else None,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Request-ID"],
     )
+
+    app.add_middleware(RequestIDMiddleware)
 
     # ======================================================
     # TRUSTED HOSTS
