@@ -1,0 +1,26 @@
+# CODEOWNERS
+
+# Global owners
+* @capabilityos/engineering
+
+# Backend
+apps/api/ @capabilityos/backend
+apps/api/app/api/ @capabilityos/backend
+apps/api/app/services/ @capabilityos/backend
+apps/api/app/models/ @capabilityos/backend
+apps/api/app/repositories/ @capabilityos/backend
+apps/api/app/schemas/ @capabilityos/backend
+
+# Frontend
+apps/web/ @capabilityos/frontend
+apps/admin/ @capabilityos/frontend
+
+# Infrastructure
+infrastructure/ @capabilityos/devops
+docker/ @capabilityos/devops
+
+# Documentation
+docs/ @capabilityos/engineering
+
+# CI/CD
+.github/ @capabilityos/devops

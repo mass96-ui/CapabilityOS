@@ -34,7 +34,7 @@ class BaseService(Generic[ModelType]):
         await self.session.refresh(obj)
         return obj
 
-    async def get_by_id(self, obj_id: int) -> ModelType | None:
+    async def get_by_id(self, obj_id: str) -> ModelType | None:
         """
         Retrieve a record by primary key.
         """
@@ -58,7 +58,7 @@ class BaseService(Generic[ModelType]):
         await self.session.refresh(obj)
         return obj
 
-    async def delete(self, obj_id: int) -> bool:
+    async def delete(self, obj_id: str) -> bool:
         """
         Delete a record by primary key.
         """

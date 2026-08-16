@@ -36,7 +36,7 @@ class BaseRepository(Generic[ModelType]):
     # READ
     # ==========================================================
 
-    async def get_by_id(self, entity_id: Any) -> ModelType | None:
+    async def get_by_id(self, entity_id: str) -> ModelType | None:
         statement = select(self.model).where(self.model.id == entity_id)
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
@@ -83,7 +83,7 @@ class BaseRepository(Generic[ModelType]):
         await self.session.delete(instance)
         await self.session.commit()
 
-    async def delete_by_id(self, entity_id: Any) -> bool:
+    async def delete_by_id(self, entity_id: str) -> bool:
         statement = delete(self.model).where(self.model.id == entity_id)
         result = await self.session.execute(statement)
         await self.session.commit()
@@ -93,7 +93,7 @@ class BaseRepository(Generic[ModelType]):
     # EXISTS
     # ==========================================================
 
-    async def exists(self, entity_id: Any) -> bool:
+    async def exists(self, entity_id: str) -> bool:
         statement = select(self.model.id).where(self.model.id == entity_id)
         result = await self.session.execute(statement)
         return result.scalar_one_or_none() is not None

@@ -21,6 +21,13 @@ export interface AuthResponse {
   user: UserProfile;
 }
 
+export interface RegistrationResponse {
+  message: string;
+  email: string;
+  username: string;
+  is_verified: boolean;
+}
+
 export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
@@ -47,6 +54,13 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
   }
 
   return data as T;
+}
+
+export async function refreshAccessToken(refreshToken: string): Promise<AuthResponse> {
+  return apiRequest<AuthResponse>("/auth/refresh", {
+    method: "POST",
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
 }
 
 export async function fetchHealth() {

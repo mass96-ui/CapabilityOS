@@ -17,6 +17,25 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: capabilityos-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-capabilityos}:${POSTGRES_PASSWORD:-capabilityos}@postgres:5432/${POSTGRES_DB:-capabilityos}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
+      ENVIRONMENT: development
+      DEBUG: "true"
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./apps/api:/app/apps/api
+
   web:
     build:
       context: .
@@ -27,6 +46,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
     ports:
       - '3000:3000'
 

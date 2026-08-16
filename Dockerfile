@@ -1,4 +1,5 @@
-FROM node:20-alpine AS base
+# CapabilityOS Web Frontend Dockerfile
+# Builds and serves the Next.js learner application
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable

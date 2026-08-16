@@ -14,6 +14,7 @@ from app.core.exceptions import (
     ServiceError,
     handle_http_exception,
     handle_service_error,
+    handle_unexpected_exception,
     handle_validation_error,
 )
 from app.core.logging import logger
@@ -102,6 +103,11 @@ openapi_url="/openapi.json" if settings.ENVIRONMENT != "production" else None,
     app.add_exception_handler(
         RequestValidationError,
         handle_validation_error,
+    )
+
+    app.add_exception_handler(
+        Exception,
+        handle_unexpected_exception,
     )
 
     # ======================================================

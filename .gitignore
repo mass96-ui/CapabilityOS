@@ -1,24 +1,18 @@
+# Dependencies
 node_modules/
 .pnpm-store/
+
+# Build output
 .next/
 out/
 dist/
 coverage/
-.pytest_cache/
-__pycache__/
-*.py[cod]
-.env
-.env.local
-.env.*.local
-.DS_Store
-.vscode/
-.idea/
+*.tsbuildinfo
+
 # Python
 __pycache__/
 *.py[cod]
 .pytest_cache/
-
-# Virtual environments
 .venv/
 venv/
 venv310/
@@ -27,21 +21,12 @@ venv310/
 .env
 .env.local
 .env.*.local
+!.env.example
 
 # Databases
 *.db
 *.sqlite
 *.sqlite3
-
-# Node / frontend
-node_modules/
-.pnpm-store/
-.next/
-out/
-dist/
-coverage/
-.turbo/
-*.tsbuildinfo
 
 # Logs
 *.log
@@ -49,11 +34,25 @@ coverage/
 # Backup files
 *.bak
 *.backup
-*.before-final
-*.before-*
+*.old
+*.backup_*
 backup_*/
 backups/
 *_backup_*/
+
+# IDE / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Local project backups
+CapabilityOS_before_refresh_*/
+
+# Environment backups
+*.env.backup*
+
+# Generated files
+openapi.json
 
 # Local debug / temporary scripts
 debug/
@@ -65,25 +64,5 @@ verify_*.py
 reset_*.py
 get_*.py
 
-# Generated files
-openapi.json
-
-# IDE / OS
-.DS_Store
-.vscode/
-.idea/
-# Local project backups
-CapabilityOS_before_refresh_*/
-# Environment files
-.env
-.env.*
-!.env.example
-
-# Backup files
-*.backup
-*.bak
-*.old
-*.backup_*
-
-# Environment backups
-*.env.backup*
+# Turbo
+.turbo/

@@ -10,12 +10,12 @@ from email.message import EmailMessage
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.dependencies import CurrentUserDep, get_db
+from app.core.logging import logger
 from app.models.auth.email_verification import EmailVerificationOTP
 from app.repositories.user import UserRepository
 from app.schemas.auth import (
@@ -51,35 +51,6 @@ router = APIRouter(
 OTP_LENGTH = 6
 OTP_EXPIRY_MINUTES = 10
 OTP_MAX_ATTEMPTS = 5
-
-
-# ============================================================
-# REQUEST SCHEMAS
-# ============================================================
-
-
-class VerifyEmailRequest(BaseModel):
-    """
-    Verify a user's email using the OTP sent during registration.
-    """
-
-    email: EmailStr
-
-    otp: str = Field(
-        ...,
-        min_length=6,
-        max_length=6,
-        pattern=r"^\d{6}$",
-        description="Six digit email verification OTP",
-    )
-
-
-class ResendVerificationRequest(BaseModel):
-    """
-    Request a new verification OTP.
-    """
-
-    email: EmailStr
 
 
 # ============================================================
@@ -279,15 +250,18 @@ async def _create_verification_otp(
 
     except Exception as exc:
 
-        print(
-            f"[EMAIL ERROR] Could not send verification email "
-            f"to {email}: {exc}"
+        logger.error(
+            "Could not send verification email to %s: %s",
+            email,
+            exc,
         )
 
         if settings.ENVIRONMENT == "development":
 
-            print(
-                f"[DEV OTP] Verification OTP for {email}: {otp}"
+            logger.info(
+                "Dev OTP for %s: %s",
+                email,
+                otp,
             )
 
         raise HTTPException(
