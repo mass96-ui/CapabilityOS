@@ -38,4 +38,4 @@ class AssessmentAttemptSubmitResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     attempt: AssessmentAttemptResponse
-    capability: dict
+    capability: dict | None

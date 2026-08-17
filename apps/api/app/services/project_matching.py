@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 
 @dataclass(frozen=True)
@@ -12,12 +12,14 @@ class RequirementMatch:
     required: bool
     status: str
     gap: int
+    capability_name: Optional[str] = None
 
 
 @dataclass(frozen=True)
 class ProjectMatchResult:
     eligible: bool
     match_score: float
+    coverage_ratio: float
     matched: List[RequirementMatch]
     gaps: List[RequirementMatch]
     missing: List[RequirementMatch]
@@ -29,7 +31,8 @@ class ProjectMatchingService:
     @staticmethod
     def evaluate(
         requirements,
-        user_capabilities_by_capability_id,
+        user_capabilities_by_capability_id: Dict[str, object],
+        capability_names: Optional[Dict[str, str]] = None,
     ) -> ProjectMatchResult:
         matched = []
         gaps = []
@@ -37,6 +40,8 @@ class ProjectMatchingService:
 
         total_weight = 0.0
         achieved_weight = 0.0
+        total_requirements = len(requirements)
+        matched_count = 0
 
         for requirement in requirements:
             weight = max(float(requirement.importance), 0.0)
@@ -50,6 +55,11 @@ class ProjectMatchingService:
                 item = RequirementMatch(
                     requirement_id=requirement.id,
                     capability_id=requirement.capability_id,
+                    capability_name=(
+                        capability_names.get(requirement.capability_id)
+                        if capability_names
+                        else None
+                    ),
                     required_level=requirement.minimum_proficiency_level,
                     current_level=None,
                     importance=weight,
@@ -68,6 +78,7 @@ class ProjectMatchingService:
                 status = "matched"
                 achieved_weight += weight
                 target = matched
+                matched_count += 1
             else:
                 status = "gap"
                 achieved_weight += weight * min(
@@ -79,6 +90,11 @@ class ProjectMatchingService:
                 RequirementMatch(
                     requirement_id=requirement.id,
                     capability_id=requirement.capability_id,
+                    capability_name=(
+                        capability_names.get(requirement.capability_id)
+                        if capability_names
+                        else None
+                    ),
                     required_level=required_level,
                     current_level=current_level,
                     importance=weight,
@@ -94,12 +110,19 @@ class ProjectMatchingService:
             else 100.0
         )
 
+        coverage_ratio = (
+            round(matched_count / total_requirements, 2)
+            if total_requirements
+            else 1.0
+        )
+
         required_missing = any(item.required for item in missing)
         required_gaps = any(item.required for item in gaps)
 
         return ProjectMatchResult(
             eligible=not required_missing and not required_gaps,
             match_score=match_score,
+            coverage_ratio=coverage_ratio,
             matched=matched,
             gaps=gaps,
             missing=missing,

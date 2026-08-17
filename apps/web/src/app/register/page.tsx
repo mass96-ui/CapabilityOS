@@ -40,7 +40,7 @@ export default function RegisterPage() {
         password,
         confirm_password: confirmPassword,
       });
-      router.push("/login");
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : "Registration failed. Please check your details.",

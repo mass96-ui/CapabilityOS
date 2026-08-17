@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.user import User
 from app.repositories.capability import CapabilityRepository
 from app.repositories.project import ProjectRepository
 from app.repositories.project_requirement import (
@@ -14,6 +15,7 @@ class ProjectRequirementService:
     def __init__(
         self,
         session: AsyncSession,
+        current_user: User | None = None,
     ):
 
         self.repository = ProjectRequirementRepository(
@@ -26,6 +28,33 @@ class ProjectRequirementService:
 
         self.capability_repository = CapabilityRepository(
             session
+        )
+
+        self.current_user = current_user
+
+    def _require_owner_or_admin(self, project) -> None:
+        """
+        Ensure the current user is the project owner or an admin.
+        """
+
+        if self.current_user is None:
+            raise ValueError(
+                "Authentication required."
+            )
+
+        is_admin = (
+            self.current_user.is_superuser
+            or self.current_user.role == "admin"
+        )
+
+        if is_admin:
+            return
+
+        if project.owner_id == self.current_user.id:
+            return
+
+        raise ValueError(
+            "You do not have permission to modify this project."
         )
 
     # ======================================================
@@ -51,6 +80,8 @@ class ProjectRequirementService:
             raise ValueError(
                 "Project does not exist."
             )
+
+        self._require_owner_or_admin(project)
 
         capability = await self.capability_repository.get_by_id(
             capability_id
@@ -103,6 +134,12 @@ class ProjectRequirementService:
                 "Project requirement does not exist."
             )
 
+        capability = await self.capability_repository.get_by_id(
+            requirement.capability_id
+        )
+
+        requirement.capability_name = capability.name if capability else None
+
         return requirement
 
     # ======================================================
@@ -123,9 +160,29 @@ class ProjectRequirementService:
                 "Project does not exist."
             )
 
-        return await self.repository.get_by_project(
+        requirements = await self.repository.get_by_project(
             project_id
         )
+
+        capability_ids = [
+            req.capability_id for req in requirements
+        ]
+
+        capabilities = {}
+        if capability_ids:
+            for cid in capability_ids:
+                cap = await self.capability_repository.get_by_id(
+                    cid
+                )
+                if cap:
+                    capabilities[cid] = cap.name
+
+        for req in requirements:
+            req.capability_name = capabilities.get(
+                req.capability_id
+            )
+
+        return requirements
 
     # ======================================================
     # UPDATE
@@ -144,6 +201,17 @@ class ProjectRequirementService:
         requirement = await self.get_requirement(
             requirement_id
         )
+
+        project = await self.project_repository.get_by_id(
+            requirement.project_id
+        )
+
+        if not project:
+            raise ValueError(
+                "Project does not exist."
+            )
+
+        self._require_owner_or_admin(project)
 
         return await self.repository.update(
             requirement,
@@ -165,6 +233,17 @@ class ProjectRequirementService:
         requirement = await self.get_requirement(
             requirement_id
         )
+
+        project = await self.project_repository.get_by_id(
+            requirement.project_id
+        )
+
+        if not project:
+            raise ValueError(
+                "Project does not exist."
+            )
+
+        self._require_owner_or_admin(project)
 
         await self.repository.delete(
             requirement

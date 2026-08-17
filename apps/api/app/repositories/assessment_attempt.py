@@ -33,3 +33,19 @@ class AssessmentAttemptRepository(
         )
 
         return list(result.scalars().all())
+
+    async def get_by_user(
+        self,
+        user_id: str,
+    ) -> list[AssessmentAttempt]:
+        result = await self.session.execute(
+            select(AssessmentAttempt)
+            .where(
+                AssessmentAttempt.user_id == user_id,
+            )
+            .order_by(
+                AssessmentAttempt.created_at.desc()
+            )
+        )
+
+        return list(result.scalars().all())

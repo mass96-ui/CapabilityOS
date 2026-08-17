@@ -1,5 +1,8 @@
 from fastapi import APIRouter
 
+from app.api.v1.learner.passport import (
+    router as learner_passport_router,
+)
 from app.api.v1.learner.profile import (
     router as learner_profile_router,
 )
@@ -41,6 +44,9 @@ from app.api.v1.projects import (
 )
 from app.api.v1.project_matching import (
     router as project_matching_router,
+)
+from app.api.v1.project_requirements import (
+    router as project_requirements_router,
 )
 
 
@@ -151,6 +157,12 @@ api_router.include_router(
     tags=["Project Matching"],
 )
 
+api_router.include_router(
+    project_requirements_router,
+    prefix="/v1/projects",
+    tags=["Project Requirements"],
+)
+
 
 # ==========================================================
 # LEARNER PROFILE
@@ -158,5 +170,10 @@ api_router.include_router(
 
 api_router.include_router(
     learner_profile_router,
+    prefix="/v1",
+)
+
+api_router.include_router(
+    learner_passport_router,
     prefix="/v1",
 )

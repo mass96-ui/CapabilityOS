@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import CurrentUserDep
+from app.core.dependencies import CurrentUserDep, ManagerDep, get_current_user
 from app.database.session import get_session
+from app.models.user import User
 from app.schemas.project import (
     ProjectCreate,
     ProjectResponse,
@@ -27,8 +28,8 @@ router = APIRouter()
 )
 async def create_project(
     payload: ProjectCreate,
+    current_user: ManagerDep,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(CurrentUserDep),
 ):
 
     service = ProjectService(
@@ -78,12 +79,19 @@ async def create_project(
 )
 async def get_projects(
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(CurrentUserDep),
+    current_user: User = Depends(get_current_user),
+    status: str | None = Query(None, max_length=30),
+    project_type: str | None = Query(None, max_length=50),
+    q: str | None = Query(None, max_length=100),
 ):
 
     service = ProjectService(session)
 
-    return await service.get_projects()
+    return await service.get_projects(
+        status=status,
+        project_type=project_type,
+        search_query=q,
+    )
 
 
 # ==========================================================
@@ -97,7 +105,7 @@ async def get_projects(
 async def get_owner_projects(
     owner_id: str,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(CurrentUserDep),
+    current_user: User = Depends(get_current_user),
 ):
 
     service = ProjectService(session)
@@ -127,7 +135,7 @@ async def get_owner_projects(
 async def get_project(
     project_id: str,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(CurrentUserDep),
+    current_user: User = Depends(get_current_user),
 ):
 
     service = ProjectService(session)
@@ -157,8 +165,8 @@ async def get_project(
 async def update_project(
     project_id: str,
     payload: ProjectUpdate,
+    current_user: ManagerDep,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(CurrentUserDep),
 ):
 
     service = ProjectService(
@@ -207,8 +215,8 @@ async def update_project(
 )
 async def delete_project(
     project_id: str,
+    current_user: ManagerDep,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(CurrentUserDep),
 ):
 
     service = ProjectService(

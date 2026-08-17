@@ -18,6 +18,7 @@ class UserBase(BaseSchema):
     is_active: bool = Field(default=True, description="Account active status")
     is_verified: bool = Field(default=False, description="Email verification status")
     is_superuser: bool = Field(default=False, description="Superuser status")
+    role: str = Field(default="learner", description="User role")
 
 
 class UserCreate(UserBase):

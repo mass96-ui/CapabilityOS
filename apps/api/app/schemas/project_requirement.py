@@ -56,6 +56,8 @@ class ProjectRequirementResponse(BaseModel):
 
     capability_id: str
 
+    capability_name: str | None = None
+
     description: str | None
 
     minimum_proficiency_level: int

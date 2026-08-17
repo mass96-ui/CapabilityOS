@@ -7,7 +7,12 @@ import {
   type RegistrationResponse,
   type UserProfile,
   apiRequest,
+  forgotPassword as forgotPasswordApi,
   refreshAccessToken,
+  resendVerification as resendVerificationApi,
+  resetPassword as resetPasswordApi,
+  setAuthCallbacks,
+  verifyEmail as verifyEmailApi,
 } from "./api";
 
 interface AuthContextType {
@@ -25,6 +30,10 @@ interface AuthContextType {
     password: string;
     confirm_password: string;
   }) => Promise<void>;
+  verifyEmail: (email: string, otp: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, password: string, confirmPassword: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -36,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const logout = useCallback(() => {
+  const performLogout = useCallback(() => {
     const refresh = localStorage.getItem("refresh_token");
     if (refresh) {
       apiRequest("/auth/logout", {
@@ -51,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setRefreshToken(null);
     setUser(null);
+    setAuthCallbacks(null, null);
   }, []);
 
   const restoreSession = useCallback(
@@ -70,18 +80,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setToken(refreshed.access_token);
             setRefreshToken(refreshed.refresh_token);
             setUser(refreshed.user);
+            setAuthCallbacks(refreshed.refresh_token, null);
             return;
           } catch {
-            logout();
+            performLogout();
           }
         } else {
-          logout();
+          performLogout();
         }
       } finally {
         setIsLoading(false);
       }
     },
-    [logout],
+    [performLogout],
   );
 
   useEffect(() => {
@@ -98,22 +109,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [restoreSession]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const res = await apiRequest<AuthResponse>("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      });
-      localStorage.setItem("access_token", res.access_token);
-      localStorage.setItem("refresh_token", res.refresh_token);
-      setToken(res.access_token);
-      setRefreshToken(res.refresh_token);
-      setUser(res.user);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const login = useCallback(
+    async (email: string, password: string) => {
+      setIsLoading(true);
+      try {
+        const res = await apiRequest<AuthResponse>("/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        });
+        localStorage.setItem("access_token", res.access_token);
+        localStorage.setItem("refresh_token", res.refresh_token);
+        setToken(res.access_token);
+        setRefreshToken(res.refresh_token);
+        setUser(res.user);
+        setAuthCallbacks(res.refresh_token, performLogout);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [performLogout],
+  );
 
   const register = useCallback(
     async (payload: {
@@ -137,6 +152,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const verifyEmail = useCallback(
+    async (email: string, otp: string) => {
+      setIsLoading(true);
+      try {
+        const res = await verifyEmailApi(email, otp);
+        localStorage.setItem("access_token", res.access_token);
+        localStorage.setItem("refresh_token", res.refresh_token);
+        setToken(res.access_token);
+        setRefreshToken(res.refresh_token);
+        setUser(res.user);
+        setAuthCallbacks(res.refresh_token, performLogout);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [performLogout],
+  );
+
+  const resendVerification = useCallback(async (email: string) => {
+    await resendVerificationApi(email);
+  }, []);
+
+  const forgotPassword = useCallback(async (email: string) => {
+    await forgotPasswordApi(email);
+  }, []);
+
+  const resetPassword = useCallback(
+    async (token: string, password: string, confirmPassword: string) => {
+      await resetPasswordApi(token, password, confirmPassword);
+    },
+    [],
+  );
+
+  const logout = useCallback(() => {
+    performLogout();
+  }, [performLogout]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -147,6 +199,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         login,
         register,
+        verifyEmail,
+        resendVerification,
+        forgotPassword,
+        resetPassword,
         logout,
       }}
     >

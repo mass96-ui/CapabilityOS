@@ -111,9 +111,17 @@ class ProjectService:
 
     async def get_projects(
         self,
+        *,
+        status: str | None = None,
+        project_type: str | None = None,
+        search_query: str | None = None,
     ):
 
-        return await self.repository.get_all()
+        return await self.repository.get_all(
+            status=status,
+            project_type=project_type,
+            search_query=search_query,
+        )
 
     # ======================================================
     # GET OWNER PROJECTS

@@ -64,12 +64,30 @@ class ProjectRepository:
 
         return list(result.scalars().all())
 
-    async def get_all(self) -> list[Project]:
+    async def get_all(
+        self,
+        *,
+        status: str | None = None,
+        project_type: str | None = None,
+        search_query: str | None = None,
+    ) -> list[Project]:
 
-        result = await self.session.execute(
-            select(Project)
-            .order_by(Project.created_at.desc())
-        )
+        query = select(Project)
+
+        if status is not None:
+            query = query.where(Project.status == status)
+
+        if project_type is not None:
+            query = query.where(Project.project_type == project_type)
+
+        if search_query:
+            query = query.where(
+                Project.name.ilike(f"%{search_query}%")
+            )
+
+        query = query.order_by(Project.created_at.desc())
+
+        result = await self.session.execute(query)
 
         return list(result.scalars().all())
 
@@ -80,8 +98,13 @@ class ProjectRepository:
     ) -> Project:
 
         for key, value in values.items():
+
             if value is not None:
-                setattr(project, key, value)
+                setattr(
+                    project,
+                    key,
+                    value,
+                )
 
         await self.session.commit()
 
