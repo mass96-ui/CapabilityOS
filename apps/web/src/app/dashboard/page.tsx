@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -111,7 +112,7 @@ export default function DashboardPage() {
                 const level = getSafeProficiency(capability?.proficiency_level);
                 const score = getSafeCapabilityScore(capability?.score);
                 const date = formatDashboardDate(capability?.last_assessed_at);
-                return <div key={`${getSafeText(capability?.id) ?? "capability"}-${index}`}><div className="flex justify-between gap-2 text-sm"><span className="text-slate-200">{name}</span><span className="text-indigo-300">{level === null ? "Level unavailable" : `Level ${level}/4`}</span></div>{level !== null && <div className="mt-2 h-2 rounded-full bg-slate-800" role="progressbar" aria-label={`${name} proficiency`} aria-valuemin={1} aria-valuemax={4} aria-valuenow={level}><div className="h-2 rounded-full bg-indigo-500" style={{ width: `${(level / 4) * 100}%` }} /></div>}<p className="mt-1 text-xs text-slate-500">{score === null ? "Score unavailable" : `Score ${score.toFixed(1)} / 100`}{date ? ` · Assessed ${date}` : ""}</p></div>;
+                return <div key={`${getSafeText(capability?.id) ?? "capability"}-${index}`}><div className="flex justify-between gap-2 text-sm"><span className="text-slate-200">{name}</span><span className="text-indigo-300">{level === null ? "Level unavailable" : `Level ${level}/4`}</span></div>{level !== null && <div aria-hidden="true" className="mt-2 h-2 rounded-full bg-slate-800"><div className="h-2 rounded-full bg-indigo-500" style={{ width: `${(level / 4) * 100}%` }} /></div>}<p className="mt-1 text-xs text-slate-500">{score === null ? "Score unavailable" : `Score ${score.toFixed(1)} / 100`}{date ? ` · Assessed ${date}` : ""}</p></div>;
               })}</div>}
             </div>
           )}
