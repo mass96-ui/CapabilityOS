@@ -1,1 +1,46 @@
 
+name: Learner Dashboard Validation
+
+on:
+  push:
+    branches:
+      - copilot/learner-dashboard-ux
+    paths:
+      - "apps/web/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "package.json"
+      - "turbo.json"
+      - ".github/workflows/learner-dashboard-validation.yml"
+  workflow_dispatch:
+
+jobs:
+  dashboard-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Dashboard helper tests
+        run: pnpm --filter @capabilityos/web exec vitest run src/app/dashboard/dashboard-data.test.ts
+
+      - name: Frontend lint
+        run: pnpm --filter @capabilityos/web lint
+
+      - name: Frontend typecheck
+        run: pnpm --filter @capabilityos/web typecheck
+
+      - name: Frontend production build
+        run: pnpm --filter @capabilityos/web build
+
