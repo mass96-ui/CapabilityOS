@@ -41,13 +41,19 @@ export default function DashboardPage() {
 
     if (currentRequestId !== requestId.current) return;
 
-    if (capsResult.status === "fulfilled" && Array.isArray(capsResult.value)) {
+    if (
+      capsResult.status === "fulfilled" &&
+      Array.isArray(capsResult.value)
+    ) {
       setUserCapabilities(capsResult.value);
     } else {
       setUserCapabilities([]);
     }
 
-    if (passportResult.status === "fulfilled" && passportResult.value != null) {
+    if (
+      passportResult.status === "fulfilled" &&
+      passportResult.value != null
+    ) {
       setPassport(passportResult.value);
     } else {
       setPassport(null);
@@ -148,7 +154,9 @@ export default function DashboardPage() {
             className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 hover:border-indigo-700 transition-all"
           >
             <h3 className="text-lg font-semibold text-white">Assessments</h3>
-            <p className="text-slate-400 text-sm mt-1">Discover and take assessments</p>
+            <p className="text-slate-400 text-sm mt-1">
+              Discover and take assessments
+            </p>
             <span className="text-indigo-400 text-sm font-medium mt-4 block">
               Find Assessments →
             </span>
@@ -158,15 +166,23 @@ export default function DashboardPage() {
             href="/passport"
             className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 hover:border-indigo-700 transition-all"
           >
-            <h3 className="text-lg font-semibold text-white">Engineering Passport</h3>
-            <p className="text-slate-400 text-sm mt-1">View your verified capability profile</p>
-            <span className="text-indigo-400 text-sm font-medium mt-4 block">View Passport →</span>
+            <h3 className="text-lg font-semibold text-white">
+              Engineering Passport
+            </h3>
+            <p className="text-slate-400 text-sm mt-1">
+              View your verified capability profile
+            </p>
+            <span className="text-indigo-400 text-sm font-medium mt-4 block">
+              View Passport →
+            </span>
           </Link>
         </div>
 
         <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 md:p-8 space-y-6">
           <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-            <h3 className="text-lg font-semibold text-slate-200">Authenticated Learner Profile</h3>
+            <h3 className="text-lg font-semibold text-slate-200">
+              Authenticated Learner Profile
+            </h3>
 
             <span className="inline-flex items-center px-3 py-1 bg-emerald-950 border border-emerald-800 text-emerald-300 text-xs font-semibold rounded-full">
               <span className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse" />
@@ -188,31 +204,43 @@ export default function DashboardPage() {
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
                 Username
               </span>
-              <span className="text-indigo-300 font-mono font-medium">@{user.username}</span>
+              <span className="text-indigo-300 font-mono font-medium">
+                @{user.username}
+              </span>
             </div>
 
             <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-4">
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
                 Email Address
               </span>
-              <span className="text-slate-100 font-medium">{user.email}</span>
+              <span className="text-slate-100 font-medium">
+                {user.email}
+              </span>
             </div>
 
             <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-4">
               <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">
                 User ID (UUID)
               </span>
-              <span className="text-slate-400 font-mono text-xs truncate block">{user.id}</span>
+              <span className="text-slate-400 font-mono text-xs truncate block">
+                {user.id}
+              </span>
             </div>
           </div>
         </div>
 
         <div className="flex items-center justify-between">
-          <Link href="/profile" className="text-indigo-400 hover:text-indigo-300 font-medium">
+          <Link
+            href="/profile"
+            className="text-indigo-400 hover:text-indigo-300 font-medium"
+          >
             Update Profile →
           </Link>
 
-          <Link href="/" className="text-indigo-400 hover:text-indigo-300 font-medium">
+          <Link
+            href="/"
+            className="text-indigo-400 hover:text-indigo-300 font-medium"
+          >
             ← Back to Home
           </Link>
         </div>
