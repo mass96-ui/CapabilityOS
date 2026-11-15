@@ -24,5 +24,12 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "nanoid@3": "3.3.18",
+      "postcss": "8.5.18",
+      "source-map-js": "1.2.2"
+    }
   }
 }

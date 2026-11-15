@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import {
   type Project,
@@ -13,8 +13,9 @@ import {
 } from "../../../lib/api";
 import { useAuth } from "../../../lib/auth-context";
 
-export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+export default function ProjectDetailPage() {
   const router = useRouter();
+  const { id } = useParams<{ id: string }>();
   const { user, isLoading: authLoading } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [requirements, setRequirements] = useState<ProjectRequirement[]>([]);
@@ -38,13 +39,13 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
     setError(null);
     try {
       const [projectData, reqData] = await Promise.all([
-        fetchProjectById(params.id),
-        fetchProjectRequirements(params.id),
+        fetchProjectById(id),
+        fetchProjectRequirements(id),
       ]);
       setProject(projectData);
       setRequirements(reqData);
       try {
-        const matchData = await fetchProjectMatch(params.id);
+        const matchData = await fetchProjectMatch(id);
         setMatch(matchData);
       } catch {
         // No match data available

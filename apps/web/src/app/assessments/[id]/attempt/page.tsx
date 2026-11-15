@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import {
   type Assessment,
@@ -14,8 +14,9 @@ import {
 } from "../../../../lib/api";
 import { useAuth } from "../../../../lib/auth-context";
 
-export default function AssessmentAttemptPage({ params }: { params: { id: string } }) {
+export default function AssessmentAttemptPage() {
   const router = useRouter();
+  const { id } = useParams<{ id: string }>();
   const { user, isLoading: authLoading } = useAuth();
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [questions, setQuestions] = useState<AssessmentQuestion[]>([]);
@@ -35,8 +36,8 @@ export default function AssessmentAttemptPage({ params }: { params: { id: string
     async function init() {
       try {
         const [assessmentData, questionsData] = await Promise.all([
-          fetchAssessmentById(params.id),
-          fetchAssessmentQuestions(params.id),
+          fetchAssessmentById(id),
+          fetchAssessmentQuestions(id),
         ]);
         setAssessment(assessmentData);
         const sorted = questionsData.sort(
@@ -51,7 +52,7 @@ export default function AssessmentAttemptPage({ params }: { params: { id: string
     }
 
     init();
-  }, [user, params.id]);
+  }, [user, id]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -117,7 +118,7 @@ export default function AssessmentAttemptPage({ params }: { params: { id: string
     setSubmitting(true);
     try {
       await submitAssessmentAttempt(attemptId);
-      router.push(`/assessments/${params.id}/result?attempt=${attemptId}`);
+      router.push(`/assessments/${id}/result?attempt=${attemptId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit assessment.");
       setSubmitting(false);
