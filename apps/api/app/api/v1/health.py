@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.database.session import get_session
 
 router = APIRouter(
     prefix="/health",
@@ -32,7 +37,7 @@ async def health_check() -> dict:
         "version": settings.APP_VERSION,
         "environment": settings.ENVIRONMENT,
         "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -40,15 +45,20 @@ async def health_check() -> dict:
     "/ready",
     summary="Readiness Check",
 )
-async def readiness_check() -> dict:
+async def readiness_check(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict:
     """
-    Readiness probe.
+    Readiness probe that verifies the database is accepting queries.
+    """
 
-    Future versions will verify:
-    - Database connectivity
-    - Redis
-    - External services
-    """
+    try:
+        await session.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database unavailable",
+        ) from None
 
     return {
         "success": True,

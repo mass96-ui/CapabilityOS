@@ -147,3 +147,41 @@ jobs:
         run: docker build --pull --file Dockerfile --target runtime --tag capabilityos-web:${GITHUB_SHA} .
       - name: Build API runtime image (no push)
         run: docker build --pull --file apps/api/Dockerfile --target runtime --tag capabilityos-api:${GITHUB_SHA} .
+      - name: Smoke test API runtime image
+        shell: bash
+        run: |
+          name="capabilityos-api-smoke-${GITHUB_RUN_ID}"
+          trap 'docker rm --force "$name" >/dev/null 2>&1 || true' EXIT
+          docker run --detach --name "$name" "capabilityos-api:${GITHUB_SHA}"
+
+          test "$(docker inspect --format='{{.Config.User}}' "$name")" = "10001:10001"
+          docker exec "$name" python -c '
+          from importlib.metadata import PackageNotFoundError, distribution
+
+          test_only = ("pytest", "pytest-asyncio", "httpx", "httpcore", "certifi")
+          installed = []
+          for name in test_only:
+              try:
+                  distribution(name)
+              except PackageNotFoundError:
+                  continue
+              installed.append(name)
+          if installed:
+              raise SystemExit(f"Test-only packages in runtime image: {installed}")
+          '
+
+          for attempt in {1..45}; do
+            health="$(docker inspect --format='{{.State.Health.Status}}' "$name")"
+            if [[ "$health" == "healthy" ]]; then
+              break
+            fi
+            if [[ "$health" == "unhealthy" ]]; then
+              docker logs "$name"
+              exit 1
+            fi
+            sleep 2
+          done
+          test "$(docker inspect --format='{{.State.Health.Status}}' "$name")" = "healthy"
+
+          docker stop --time 10 "$name"
+          test "$(docker inspect --format='{{.State.ExitCode}}' "$name")" = "0"
