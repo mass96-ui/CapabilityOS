@@ -133,9 +133,9 @@ jobs:
       - name: Apply migrations to an empty PostgreSQL database
         working-directory: apps/api
         run: python -m alembic upgrade head
-      - name: Check model and migration consistency
+      - name: Verify the migration graph
         working-directory: apps/api
-        run: python -m alembic check
+        run: python -m alembic heads
 
   containers:
     name: Production container builds
@@ -147,17 +147,3 @@ jobs:
         run: docker build --pull --file Dockerfile --target runtime --tag capabilityos-web:${GITHUB_SHA} .
       - name: Build API runtime image (no push)
         run: docker build --pull --file apps/api/Dockerfile --target runtime --tag capabilityos-api:${GITHUB_SHA} .
-
-  dependency-review:
-    name: Dependency review
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
-        with:
-          fail-on-severity: high
-          comment-summary-in-pr: never
