@@ -1,8 +1,7 @@
-from fastapi.testclient import TestClient
-from sqlalchemy.exc import SQLAlchemyError
-
 from app.database.session import get_session
 from app.main import app
+from fastapi.testclient import TestClient
+from sqlalchemy.exc import SQLAlchemyError
 
 
 def test_root_endpoint(client: TestClient) -> None:
