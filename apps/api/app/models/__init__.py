@@ -4,6 +4,7 @@ from app.models.assessment_attempt import AssessmentAttempt
 from app.models.assessment_evidence import AssessmentEvidence
 from app.models.assessment_question import AssessmentQuestion
 from app.models.auth.email_verification import EmailVerificationOTP
+from app.models.auth.password_reset_token import PasswordResetToken
 from app.models.auth.session import AuthSession
 from app.models.capability import Capability
 from app.models.capability_score_history import CapabilityScoreHistory
@@ -24,6 +25,7 @@ __all__ = [
     "CapabilityScoreHistory",
     "EmailVerificationOTP",
     "LearnerProfile",
+    "PasswordResetToken",
     "Project",
     "ProjectRequirement",
     "User",
