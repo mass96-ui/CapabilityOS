@@ -4,8 +4,10 @@ import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import {
   type Assessment,
+  type AssessmentAttempt,
   type UserCapability,
   fetchAssessments,
+  fetchMyAssessmentAttempts,
   fetchUserCapabilities,
 } from "../../lib/api";
 import { useAuth } from "../../lib/auth-context";
@@ -14,6 +16,7 @@ export default function AssessmentsPage() {
   const { user, isLoading } = useAuth();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [userCapabilities, setUserCapabilities] = useState<UserCapability[]>([]);
+  const [attempts, setAttempts] = useState<AssessmentAttempt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,12 +26,14 @@ export default function AssessmentsPage() {
     async function load() {
       if (!user) return;
       try {
-        const [assessmentsData, userCaps] = await Promise.all([
+        const [assessmentsData, userCaps, assessmentAttempts] = await Promise.all([
           fetchAssessments(),
           fetchUserCapabilities(user.id),
+          fetchMyAssessmentAttempts(),
         ]);
         setAssessments(assessmentsData);
         setUserCapabilities(userCaps);
+        setAttempts(assessmentAttempts);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load assessments.");
       } finally {
@@ -75,6 +80,47 @@ export default function AssessmentsPage() {
         <p className="text-slate-400 mb-8">
           Discover assessments to validate and improve your capabilities.
         </p>
+
+        {attempts.some((attempt) => attempt.status === "submitted") && (
+          <section className="mb-10">
+            <h2 className="text-xl font-bold text-white mb-4">Previous submissions</h2>
+            <div className="space-y-3">
+              {attempts
+                .filter((attempt) => attempt.status === "submitted")
+                .map((attempt) => {
+                  const assessment = assessments.find((item) => item.id === attempt.assessment_id);
+                  return (
+                    <div
+                      key={attempt.id}
+                      className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-slate-900/60 border border-slate-800 rounded-xl p-4"
+                    >
+                      <div>
+                        <h3 className="font-semibold text-white">
+                          {assessment?.title || "Assessment"}
+                        </h3>
+                        <p className="text-sm text-slate-400">
+                          Submitted{" "}
+                          {attempt.submitted_at
+                            ? new Date(attempt.submitted_at).toLocaleDateString()
+                            : ""}
+                          {" · "}
+                          {attempt.percentage != null
+                            ? `${attempt.percentage.toFixed(0)}%`
+                            : "Score unavailable"}
+                        </p>
+                      </div>
+                      <Link
+                        href={`/assessments/${attempt.assessment_id}/result?attempt=${attempt.id}`}
+                        className="text-indigo-400 hover:text-indigo-300 text-sm font-medium"
+                      >
+                        View result →
+                      </Link>
+                    </div>
+                  );
+                })}
+            </div>
+          </section>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-950/60 border border-red-800 rounded-xl text-red-300 text-sm">

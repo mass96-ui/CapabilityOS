@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.session import get_session
 from app.schemas.assessment_question import (
     AssessmentQuestionCreate,
+    AssessmentQuestionForAttemptResponse,
     AssessmentQuestionResponse,
 )
 from app.services.assessment_question import (
@@ -17,7 +18,7 @@ router = APIRouter()
 
 @router.get(
     "/{question_id}",
-    response_model=AssessmentQuestionResponse,
+    response_model=AssessmentQuestionForAttemptResponse,
 )
 async def get_question(
     question_id: str,
@@ -38,7 +39,7 @@ async def get_question(
 
 @router.get(
     "/assessment/{assessment_id}",
-    response_model=list[AssessmentQuestionResponse],
+    response_model=list[AssessmentQuestionForAttemptResponse],
 )
 async def get_assessment_questions(
     assessment_id: str,

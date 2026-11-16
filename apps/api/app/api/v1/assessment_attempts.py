@@ -3,9 +3,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.dependencies import LearnerDep
 from app.database.session import get_session
 from app.schemas.assessment_attempt import (
     AssessmentAttemptCreate,
+    AssessmentAttemptProgressResponse,
     AssessmentAttemptResponse,
     AssessmentAttemptSubmitResponse,
 )
@@ -14,6 +16,41 @@ from app.services.assessment_attempt import (
 )
 
 router = APIRouter()
+
+
+async def _require_owned_attempt(
+    attempt_id: str,
+    current_user: LearnerDep,
+    service: AssessmentAttemptService,
+):
+    attempt = await service.get_attempt(attempt_id=attempt_id)
+    if not attempt or attempt.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assessment attempt does not exist.",
+        )
+    return attempt
+
+
+# ==========================================================
+# GET CURRENT USER ATTEMPTS
+# ==========================================================
+
+@router.get(
+    "/mine",
+    response_model=list[AssessmentAttemptResponse],
+)
+async def get_my_attempts(
+    current_user: LearnerDep,
+    assessment_id: str | None = None,
+    session: AsyncSession = Depends(get_session),
+):
+    service = AssessmentAttemptService(session)
+    attempts = await service.get_user_attempts(
+        user_id=current_user.id,
+        assessment_id=assessment_id,
+    )
+    return [attempt for attempt in attempts if attempt.status == "submitted"]
 
 
 # ==========================================================
@@ -25,15 +62,19 @@ router = APIRouter()
 )
 async def get_attempt_result(
     attempt_id: str,
+    current_user: LearnerDep,
     session: AsyncSession = Depends(get_session),
 ):
     service = AssessmentAttemptService(session)
 
     try:
+        await _require_owned_attempt(attempt_id, current_user, service)
         return await service.get_attempt_result(
             attempt_id=attempt_id,
         )
 
+    except HTTPException:
+        raise
     except ValueError as exc:
         message = str(exc)
 
@@ -61,46 +102,16 @@ async def get_attempt_result(
 
 @router.get(
     "/{attempt_id}",
-    response_model=AssessmentAttemptResponse,
+    response_model=AssessmentAttemptProgressResponse,
 )
 async def get_attempt(
     attempt_id: str,
+    current_user: LearnerDep,
     session: AsyncSession = Depends(get_session),
 ):
     service = AssessmentAttemptService(session)
 
-    attempt = await service.get_attempt(
-        attempt_id=attempt_id,
-    )
-
-    if not attempt:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Assessment attempt does not exist.",
-        )
-
-    return attempt
-
-
-# ==========================================================
-# GET USER ATTEMPTS
-# ==========================================================
-
-@router.get(
-    "/user/{user_id}",
-    response_model=list[AssessmentAttemptResponse],
-)
-async def get_user_attempts(
-    user_id: str,
-    assessment_id: str | None = None,
-    session: AsyncSession = Depends(get_session),
-):
-    service = AssessmentAttemptService(session)
-
-    return await service.get_user_attempts(
-        user_id=user_id,
-        assessment_id=assessment_id,
-    )
+    return await _require_owned_attempt(attempt_id, current_user, service)
 
 
 # ==========================================================
@@ -114,13 +125,14 @@ async def get_user_attempts(
 )
 async def create_attempt(
     payload: AssessmentAttemptCreate,
+    current_user: LearnerDep,
     session: AsyncSession = Depends(get_session),
 ):
     service = AssessmentAttemptService(session)
 
     try:
         return await service.create_attempt(
-            user_id=payload.user_id,
+            user_id=current_user.id,
             assessment_id=payload.assessment_id,
         )
 
@@ -161,15 +173,19 @@ async def create_attempt(
 )
 async def submit_attempt(
     attempt_id: str,
+    current_user: LearnerDep,
     session: AsyncSession = Depends(get_session),
 ):
     service = AssessmentAttemptService(session)
 
     try:
+        await _require_owned_attempt(attempt_id, current_user, service)
         return await service.submit_attempt(
             attempt_id=attempt_id,
         )
 
+    except HTTPException:
+        raise
     except ValueError as exc:
         message = str(exc)
 

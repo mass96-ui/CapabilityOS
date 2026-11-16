@@ -67,7 +67,7 @@ export default function AssessmentAttemptPage({ params }: { params: { id: string
   const startAttempt = async () => {
     if (!user || !assessment) return;
     try {
-      const attempt = await createAssessmentAttempt(user.id, assessment.id);
+      const attempt = await createAssessmentAttempt(assessment.id);
       setAttemptId(attempt.id);
       setStarted(true);
     } catch (err) {
