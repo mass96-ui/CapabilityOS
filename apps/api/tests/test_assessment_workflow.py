@@ -235,3 +235,112 @@ def test_learner_assessment_submission_workflow():
             ).status_code == 401
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_assessment_bank_writes_require_manager_or_admin():
+    async def seed():
+        async with AsyncSessionFactory() as session:
+            suffix = uuid.uuid4().hex[:8]
+            learner = User(
+                first_name="Bank",
+                last_name="Learner",
+                username=f"bank_learner_{suffix}",
+                email=f"bank.learner.{suffix}@test.local",
+                password_hash="test-password-hash",
+            )
+            manager = User(
+                first_name="Bank",
+                last_name="Manager",
+                username=f"bank_manager_{suffix}",
+                email=f"bank.manager.{suffix}@test.local",
+                password_hash="test-password-hash",
+                role="manager",
+            )
+            capability = Capability(
+                name=f"Assessment bank capability {suffix}",
+                slug=f"assessment-bank-capability-{suffix}",
+                category="technical",
+            )
+            session.add_all([learner, manager, capability])
+            await session.flush()
+
+            assessment = Assessment(
+                capability_id=capability.id,
+                title="Existing learner assessment",
+                slug=f"existing-learner-assessment-{suffix}",
+            )
+            session.add(assessment)
+            await session.flush()
+            result = learner.id, manager.id, capability.id, assessment.id, suffix
+            await session.commit()
+            return result
+
+    learner_id, manager_id, capability_id, existing_assessment_id, suffix = (
+        asyncio.run(seed())
+    )
+    active_user = {"id": learner_id, "role": "learner"}
+    original_override = app.dependency_overrides.pop(get_current_user, None)
+
+    async def override_current_user():
+        return User(
+            id=active_user["id"],
+            role=active_user["role"],
+        )
+
+    try:
+        with TestClient(app) as client:
+            assessment_payload = {
+                "capability_id": capability_id,
+                "title": "Manager-created assessment",
+                "slug": f"manager-created-assessment-{suffix}",
+            }
+            question_payload = {
+                "assessment_id": existing_assessment_id,
+                "question_order": 1,
+                "question_text": "Manager-created question",
+                "correct_answer": "approved",
+            }
+
+            assert client.post(
+                "/api/v1/assessments",
+                json=assessment_payload,
+            ).status_code == 401
+            assert client.post(
+                "/api/v1/assessment-questions",
+                json=question_payload,
+            ).status_code == 401
+
+            app.dependency_overrides[get_current_user] = override_current_user
+            assert client.post(
+                "/api/v1/assessments",
+                json=assessment_payload,
+            ).status_code == 403
+            assert client.post(
+                "/api/v1/assessment-questions",
+                json=question_payload,
+            ).status_code == 403
+
+            assert client.get("/api/v1/assessments").status_code == 200
+            assert client.get(
+                f"/api/v1/assessment-questions/assessment/{existing_assessment_id}"
+            ).status_code == 200
+
+            active_user.update(id=manager_id, role="manager")
+            create_assessment_response = client.post(
+                "/api/v1/assessments",
+                json=assessment_payload,
+            )
+            assert create_assessment_response.status_code == 201
+            created_assessment_id = create_assessment_response.json()["id"]
+
+            question_payload["assessment_id"] = created_assessment_id
+            create_question_response = client.post(
+                "/api/v1/assessment-questions",
+                json=question_payload,
+            )
+            assert create_question_response.status_code == 201
+            assert create_question_response.json()["assessment_id"] == created_assessment_id
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        if original_override is not None:
+            app.dependency_overrides[get_current_user] = original_override

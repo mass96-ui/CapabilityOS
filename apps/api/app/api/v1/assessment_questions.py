@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.dependencies import ManagerDep
 from app.database.session import get_session
 from app.schemas.assessment_question import (
     AssessmentQuestionCreate,
@@ -68,6 +69,7 @@ async def get_assessment_questions(
 )
 async def create_question(
     payload: AssessmentQuestionCreate,
+    current_user: ManagerDep,
     session: AsyncSession = Depends(get_session),
 ):
     service = AssessmentQuestionService(session)
