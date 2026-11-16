@@ -202,10 +202,12 @@ Key categories:
 
 ## CI/CD
 
-GitHub Actions runs on every push and pull request:
+GitHub Actions runs on every pull request and push to `main`:
 
-- **Frontend quality**: lint, typecheck, test, build
-- **Backend tests**: pytest suite
+- **Frontend quality**: production dependency audit, lint, typecheck, tests, and production build
+- **Backend tests and lint**: Ruff on changed API Python files and the full pytest suite
+
+See [merge protection readiness](docs/merge-protection.md) for the required check names and administrator setup.
 
 ---
 
