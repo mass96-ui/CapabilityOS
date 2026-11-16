@@ -1,10 +1,11 @@
 ﻿from __future__ import annotations
 
 from functools import lru_cache
-from typing import List
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+SUPPORTED_JWT_ALGORITHMS = frozenset({"HS256"})
 
 
 class Settings(BaseSettings):
@@ -26,6 +27,16 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="")
     JWT_SECRET_KEY: str = Field(default="")
     JWT_ALGORITHM: str = Field(default="HS256")
+
+    @field_validator("JWT_ALGORITHM")
+    @classmethod
+    def validate_jwt_algorithm(cls, value: str) -> str:
+        if value not in SUPPORTED_JWT_ALGORITHMS:
+            supported = ", ".join(sorted(SUPPORTED_JWT_ALGORITHMS))
+            raise ValueError(
+                f"JWT_ALGORITHM must be one of: {supported}."
+            )
+        return value
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=15)
     REFRESH_TOKEN_EXPIRE_DAYS: int = Field(default=30)
@@ -61,7 +72,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = Field(default="http://localhost:3000")
 
     @model_validator(mode="after")
-    def validate_security(self) -> "Settings":
+    def validate_security(self) -> Settings:
         if self.ENVIRONMENT.lower() != "production":
             return self
 
@@ -113,7 +124,7 @@ class Settings(BaseSettings):
         return self
 
     @property
-    def cors_origins(self) -> List[str]:
+    def cors_origins(self) -> list[str]:
         return [
             origin.strip()
             for origin in self.CORS_ORIGINS.split(",")
@@ -121,7 +132,7 @@ class Settings(BaseSettings):
         ]
 
     @property
-    def trusted_hosts(self) -> List[str]:
+    def trusted_hosts(self) -> list[str]:
         return [
             host.strip()
             for host in self.TRUSTED_HOSTS.split(",")
