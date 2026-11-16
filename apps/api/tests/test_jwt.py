@@ -4,14 +4,13 @@ import base64
 import json
 from datetime import UTC, datetime, timedelta
 
+import app.utils.jwt as jwt_module
 import pytest
+from app.core.config import Settings
+from app.utils.jwt import JWTManager
 from jose import JWTError
 from jose import jwt as jose_jwt
 from pydantic import ValidationError
-
-import app.utils.jwt as jwt_module
-from app.core.config import Settings
-from app.utils.jwt import JWTManager
 
 
 def test_jwt_algorithm_defaults_to_hs256(
