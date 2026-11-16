@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict
 
 
 class AssessmentAttemptCreate(BaseModel):
-    user_id: str
     assessment_id: str
 
 
@@ -34,8 +33,35 @@ class AssessmentAttemptResponse(BaseModel):
     updated_at: datetime
 
 
+class AssessmentAttemptProgressResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    user_id: str
+    assessment_id: str
+    status: str
+    started_at: datetime
+    submitted_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AssessmentCapabilityEstimate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: str
+    capability_id: str
+    score: float
+    confidence: float
+    evidence_count: int
+    proficiency: str
+    proficiency_level: int
+    scoring_policy: str
+    scoring_policy_version: str
+
+
 class AssessmentAttemptSubmitResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     attempt: AssessmentAttemptResponse
-    capability: dict | None
+    capability: AssessmentCapabilityEstimate | None

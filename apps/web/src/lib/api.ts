@@ -84,8 +84,6 @@ export interface AssessmentQuestion {
   question_type: string;
   question_text: string;
   options_json: string | null;
-  correct_answer: string | null;
-  explanation: string | null;
   points: number;
   is_active: boolean;
   created_at: string;
@@ -372,11 +370,15 @@ export async function fetchAssessmentQuestions(assessmentId: string) {
   return apiRequest<AssessmentQuestion[]>(`/assessment-questions/assessment/${assessmentId}`);
 }
 
-export async function createAssessmentAttempt(userId: string, assessmentId: string) {
+export async function createAssessmentAttempt(assessmentId: string) {
   return apiRequest<AssessmentAttempt>("/assessment-attempts", {
     method: "POST",
-    body: JSON.stringify({ user_id: userId, assessment_id: assessmentId }),
+    body: JSON.stringify({ assessment_id: assessmentId }),
   });
+}
+
+export async function fetchMyAssessmentAttempts() {
+  return apiRequest<AssessmentAttempt[]>("/assessment-attempts/mine");
 }
 
 export async function submitAnswer(attemptId: string, questionId: string, selectedAnswer: string) {
