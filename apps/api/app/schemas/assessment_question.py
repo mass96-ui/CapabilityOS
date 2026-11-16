@@ -35,3 +35,18 @@ class AssessmentQuestionResponse(BaseModel):
 
     created_at: datetime
     updated_at: datetime
+
+
+class AssessmentQuestionForAttemptResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    assessment_id: str
+    question_order: int
+    question_type: str
+    question_text: str
+    options_json: str | None
+    points: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
