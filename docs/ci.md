@@ -124,11 +124,24 @@ The production-only API audit is:
 python -m pip_audit -r apps/api/requirements-runtime.txt
 ```
 
-The current runtime scan reports nine advisory records across
-`dnspython==2.8.0`, `ecdsa==0.19.2`, `pyasn1==0.6.4`, and
-`python-jose==3.5.0`. The audit
-identifies fixed releases for `dnspython` and `pyasn1`, but no fixed release
-for `ecdsa` or `python-jose`; the package index currently lists `python-jose
-3.5.0` as its latest version. These findings are not allowlisted and remain
-production dependency risks requiring a separate compatibility/security
-review.
+The current runtime scan reports three records: `PYSEC-2026-1325`
+(`CVE-2024-23342`) for `ecdsa==0.19.2` (reported twice through its dependency
+paths) and `PYSEC-2026-4298` (`CVE-2026-85394`) for
+`python-jose==3.5.0`. The six dnspython and pyasn1 records were resolved by
+upgrading to `dnspython==2.9.2` and `pyasn1==0.6.5`; dnspython is required by
+`email-validator`, while pyasn1 is required by `python-jose`/`rsa`.
+The development/test requirements also previously included vulnerable
+`certifi==2026.7.22` through the HTTP test client; it is now pinned to
+`certifi==2026.10.23` and remains excluded from the production runtime image.
+
+The ecdsa advisory concerns timing leakage from signing, key-generation, and
+ECDH operations; signature verification is unaffected and the advisory has no
+planned fix. The current JWT path uses python-jose's installed cryptography
+backend, not python-ecdsa signing operations. The python-jose advisory
+concerns DER public keys accepted as HMAC secrets when verification algorithms
+are not restricted. The API decoder supplies only its configured algorithm
+(default `HS256`), rather than trusting the token header. No patched
+python-jose release is available in the package index. Both remaining
+advisories stay visible in the audit and are not allowlisted; keep the
+algorithm restriction in place and reassess these dependencies before
+changing JWT algorithms or backend selection.
