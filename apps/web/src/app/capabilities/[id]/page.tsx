@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import {
   type Capability,
@@ -12,7 +13,8 @@ import {
 } from "../../../lib/api";
 import { useAuth } from "../../../lib/auth-context";
 
-export default function CapabilityDetailPage({ params }: { params: { id: string } }) {
+export default function CapabilityDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const { user, isLoading } = useAuth();
   const [capability, setCapability] = useState<Capability | null>(null);
   const [userCap, setUserCap] = useState<UserCapability | null>(null);
@@ -27,12 +29,12 @@ export default function CapabilityDetailPage({ params }: { params: { id: string 
       if (!user) return;
       try {
         const [cap, userCaps, hist] = await Promise.all([
-          fetchCapabilityById(params.id),
+          fetchCapabilityById(id),
           fetchUserCapabilities(user.id),
-          fetchCapabilityHistory(user.id, params.id),
+          fetchCapabilityHistory(user.id, id),
         ]);
         setCapability(cap);
-        setUserCap(userCaps.find((uc: UserCapability) => uc.capability_id === params.id) || null);
+        setUserCap(userCaps.find((uc: UserCapability) => uc.capability_id === id) || null);
         setHistory(hist);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load capability.");
@@ -42,7 +44,7 @@ export default function CapabilityDetailPage({ params }: { params: { id: string 
     }
 
     load();
-  }, [user, params.id]);
+  }, [user, id]);
 
   if (isLoading || loading) {
     return (

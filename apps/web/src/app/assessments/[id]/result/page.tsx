@@ -10,7 +10,7 @@ import {
 } from "../../../../lib/api";
 import { useAuth } from "../../../../lib/auth-context";
 
-export default function AssessmentResultPage({ params }: { params: { id: string } }) {
+export default function AssessmentResultPage() {
   const searchParams = useSearchParams();
   const attemptId = searchParams.get("attempt");
   const { user, isLoading } = useAuth();

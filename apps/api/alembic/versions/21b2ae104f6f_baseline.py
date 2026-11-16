@@ -5,17 +5,16 @@ Revises:
 Create Date: 2026-08-09 16:14:52.297749
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '21b2ae104f6f'
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -29,8 +28,8 @@ def upgrade() -> None:
                 description TEXT,
                 category VARCHAR(100) NOT NULL,
                 is_active BOOLEAN NOT NULL,
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                updated_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
                 PRIMARY KEY (id),
                 UNIQUE (name),
                 UNIQUE (slug)
@@ -62,8 +61,8 @@ def upgrade() -> None:
                 bio TEXT,
                 location VARCHAR(120),
                 profile_image_url VARCHAR(500),
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                updated_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
                 PRIMARY KEY (id),
                 UNIQUE (user_id)
             )
@@ -82,8 +81,8 @@ def upgrade() -> None:
                 minimum_proficiency_level INTEGER NOT NULL,
                 importance FLOAT NOT NULL,
                 required BOOLEAN NOT NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL,
                 PRIMARY KEY (id)
             )
             """
@@ -104,8 +103,8 @@ def upgrade() -> None:
                 is_verified BOOLEAN NOT NULL,
                 is_superuser BOOLEAN NOT NULL,
                 role VARCHAR(50) NOT NULL,
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                updated_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
                 PRIMARY KEY (id),
                 UNIQUE (username),
                 UNIQUE (email)
@@ -138,8 +137,8 @@ def upgrade() -> None:
                 difficulty VARCHAR(50) NOT NULL,
                 time_limit_minutes INTEGER,
                 is_active BOOLEAN NOT NULL,
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                updated_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
                 PRIMARY KEY (id),
                 FOREIGN KEY(capability_id) REFERENCES capabilities (id) ON DELETE CASCADE,
                 UNIQUE (slug)
@@ -174,15 +173,15 @@ def upgrade() -> None:
                 user_id VARCHAR(36) NOT NULL,
                 refresh_token_hash VARCHAR(64) NOT NULL,
                 token_family VARCHAR(36) NOT NULL,
-                expires_at DATETIME NOT NULL,
-                revoked_at DATETIME,
+                expires_at TIMESTAMP NOT NULL,
+                revoked_at TIMESTAMP,
                 replaced_by_session_id VARCHAR(36),
                 reuse_detected BOOLEAN NOT NULL,
                 user_agent VARCHAR(1000),
                 ip_address VARCHAR(45),
                 device_name VARCHAR(255),
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                last_used_at DATETIME,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                last_used_at TIMESTAMP,
                 PRIMARY KEY (id),
                 FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE,
                 UNIQUE (refresh_token_hash)
@@ -210,11 +209,11 @@ def upgrade() -> None:
                 id VARCHAR(36) NOT NULL,
                 user_id VARCHAR(36) NOT NULL,
                 otp_hash VARCHAR(255) NOT NULL,
-                expires_at DATETIME NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
                 attempts INTEGER NOT NULL,
                 max_attempts INTEGER NOT NULL,
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                used_at DATETIME,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                used_at TIMESTAMP,
                 PRIMARY KEY (id),
                 FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
             )
@@ -241,9 +240,9 @@ def upgrade() -> None:
                 id VARCHAR(36) NOT NULL,
                 user_id VARCHAR(36) NOT NULL,
                 token_hash VARCHAR(64) NOT NULL,
-                expires_at DATETIME NOT NULL,
-                used_at DATETIME,
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                used_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
                 PRIMARY KEY (id),
                 FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
             )
@@ -268,8 +267,8 @@ def upgrade() -> None:
                 project_type VARCHAR(50) NOT NULL,
                 owner_id VARCHAR(36) NOT NULL,
                 organization_id VARCHAR(36),
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL,
                 PRIMARY KEY (id),
                 FOREIGN KEY(owner_id) REFERENCES users (id) ON DELETE CASCADE
             )
@@ -300,9 +299,9 @@ def upgrade() -> None:
                 score FLOAT NOT NULL,
                 confidence FLOAT NOT NULL,
                 verified BOOLEAN NOT NULL,
-                last_assessed_at DATETIME,
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                updated_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                last_assessed_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
                 PRIMARY KEY (id),
                 CONSTRAINT uq_user_capability UNIQUE (user_id, capability_id),
                 FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE,
@@ -338,10 +337,10 @@ def upgrade() -> None:
                 score FLOAT,
                 max_score FLOAT,
                 percentage FLOAT,
-                started_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                submitted_at DATETIME,
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                updated_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                started_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                submitted_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
                 PRIMARY KEY (id),
                 FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE,
                 FOREIGN KEY(assessment_id) REFERENCES assessments (id) ON DELETE CASCADE
@@ -388,8 +387,8 @@ def upgrade() -> None:
                 explanation TEXT,
                 points INTEGER NOT NULL,
                 is_active BOOLEAN NOT NULL,
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                updated_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
                 PRIMARY KEY (id),
                 FOREIGN KEY(assessment_id) REFERENCES assessments (id) ON DELETE CASCADE
             )
@@ -425,9 +424,9 @@ def upgrade() -> None:
                 selected_answer VARCHAR(500) NOT NULL,
                 is_correct BOOLEAN NOT NULL,
                 points_earned INTEGER NOT NULL,
-                answered_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                updated_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                answered_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
                 PRIMARY KEY (id),
                 FOREIGN KEY(attempt_id) REFERENCES assessment_attempts (id) ON DELETE CASCADE,
                 FOREIGN KEY(question_id) REFERENCES assessment_questions (id) ON DELETE CASCADE
@@ -465,8 +464,8 @@ def upgrade() -> None:
                 evaluator_type VARCHAR(50) NOT NULL,
                 evaluation_reason TEXT,
                 metadata_json TEXT,
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
-                updated_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                updated_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
                 PRIMARY KEY (id),
                 FOREIGN KEY(attempt_id) REFERENCES assessment_attempts (id) ON DELETE CASCADE,
                 FOREIGN KEY(answer_id) REFERENCES assessment_answers (id) ON DELETE CASCADE,
@@ -506,7 +505,7 @@ def upgrade() -> None:
                 source VARCHAR(50) NOT NULL,
                 reason TEXT,
                 metadata_json TEXT,
-                created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+                created_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
                 PRIMARY KEY (id),
                 CONSTRAINT uq_capability_history_attempt UNIQUE (user_id, capability_id, attempt_id),
                 FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE,
